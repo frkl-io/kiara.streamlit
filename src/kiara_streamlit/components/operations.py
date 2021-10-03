@@ -16,7 +16,20 @@ class KiaraOperationComponentsMixin(KiaraComponentMixin):
         defaults: typing.Optional[typing.Mapping[str, typing.Any]] = None,
         key: typing.Optional[str] = None,
         container: DeltaGenerator = st,
-    ):
+    ) -> typing.Mapping[str, typing.Any]:
+        """Render a set of input components for the specified operation.
+
+        The return value is a dict with the input field names as keys, and the values (either 'raw' Python objects, or
+        already onboarded *kiara* `Value` objects). In either case, you can use the result directly to run a *kiara* operation,
+        for example like:
+
+        ``` python
+
+        op_id = "table.cut_column"
+        inputs = st.kiara.operation_inputs(op_id)
+        op_results = kiara.get_operation(op_id).run(**inputs)
+        ```
+        """
 
         if isinstance(operation, str):
             operation = self.get_operation(operation)
