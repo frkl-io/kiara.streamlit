@@ -23,7 +23,14 @@ requirements:
     - setuptools_scm_git_archive
   run:
     - python
-    - kiara
+    - kiara>=0.2.0
+    - kiara_modules.core>=0.2.0
+    - jinja2>=3.0.1
+    - pydot>=1.4.2
+    - streamlit>=0.89.0
+    - streamlit-ace>=0.1.0
+    - streamlit-aggrid>=0.2.0
+    - streamlit-agraph>=0.0.35
 
 about:
   home: https://github.com/frkl-io/kiara.streamlit

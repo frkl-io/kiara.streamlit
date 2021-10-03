@@ -62,4 +62,4 @@ build.sh
 onefile.spec
 *_complete.zsh.zwc
 ci/conda/**/build
-ci/conda/kiara_modules.streamlit/meta.yaml
+ci/conda/kiara.streamlit/meta.yaml
