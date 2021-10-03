@@ -9,7 +9,6 @@ from kiara.operations.sample import SampleValueOperationType
 from kiara.processing import JobStatus
 
 import kiara_streamlit
-from kiara_streamlit import KiaraStreamlit
 
 module_name: typing.Optional[str] = os.environ.get("DEV_MODULE_NAME", None)
 
@@ -31,24 +30,24 @@ if module_name:
 st.sidebar.markdown("## Settings")
 
 kiara_streamlit.init()
-ktx: KiaraStreamlit = st.get_ktx()
 
 if not module_name:
     module_name = st.selectbox(
-        "Select module:", [""] + ktx.kiara.available_non_pipeline_module_types
+        "Select module:",
+        [""] + st.kiara.available_non_pipeline_module_types,
     )
     if module_name == "":
         st.write("No module selected, doing nothing...")
         st.stop()
 
-m_cls = ktx.kiara.get_module_class(module_type=module_name)  # type: ignore
+m_cls = st.kiara.get_module_class(module_type=module_name)  # type: ignore
 assert m_cls is not None
 mod_conf = m_cls._config_cls
 if mod_conf.requires_config():
     st.write("Module requires config, this is not supported yet.")
     st.stop()
 
-operation = ktx.get_operation(module_name)  # type: ignore
+operation = st.kiara.get_operation(module_name)  # type: ignore
 st.markdown(operation.doc.full_doc)
 
 st.markdown("---")
@@ -76,7 +75,7 @@ if f"{module_name}_input_slots" in st.session_state:
 if input_slots is None:
     input_slots = SlottedValueSet.from_schemas(
         operation.input_schemas,
-        kiara=ktx.kiara,
+        kiara=st.kiara,
         read_only=False,
         check_for_sameness=True,
     )
@@ -103,12 +102,14 @@ if f"{module_name}_output_slots" in st.session_state:
 
 if output_slots is None:
     output_slots = SlottedValueSet.from_schemas(
-        operation.output_schemas, kiara=ktx.kiara, read_only=False
+        operation.output_schemas, kiara=st.kiara, read_only=False
     )
     st.session_state[f"{module_name}_output_slots"] = output_slots
 
 
-op_inputs = ktx.operation_inputs(operation, key=f"operation_auto_render_{module_name}")
+op_inputs = st.kiara.operation_inputs(
+    operation, key=f"operation_auto_render_{module_name}"
+)
 
 # if "initial_values_set" not in st.session_state:
 #     input_slots.set_values(**op_inputs)
@@ -123,7 +124,7 @@ for field_name, slot in input_slots.items():
         "preview", value=False, key=f"preview_input_{field_name}"
     )
 
-    op_type: typing.Optional[SampleValueOperationType] = ktx.kiara.operation_mgmt.operation_types.get("sample", None)  # type: ignore
+    op_type: typing.Optional[SampleValueOperationType] = st.kiara.operation_mgmt.operation_types.get("sample", None)  # type: ignore
     if op_type:
         ops = op_type.get_operations_for_value_type(slot.type_name)
         if "percent" in ops.keys():
@@ -144,7 +145,7 @@ if sample_map_input:
     for field, sample_size in sample_map_input.items():
         sample_op: typing.Optional[
             OperationType
-        ] = ktx.kiara.operation_mgmt.operation_types.get("sample")
+        ] = st.kiara.operation_mgmt.operation_types.get("sample")
         assert sample_op is not None
         perc_op = sample_op.get_operations_for_value_type(  # type: ignore
             input_slots.get(field).type_name  # type: ignore
@@ -161,7 +162,7 @@ input_slots.set_values(**op_inputs)
 
 if any(preview_map_input.values()):
     st.header("Input preview")
-    ktx.valueset_info(
+    st.kiara.write_valueset(
         input_slots,
         as_columns=True,
         fields=(k for k, v in preview_map_input.items() if v),
@@ -185,8 +186,7 @@ st.header("Outputs")
 
 def run():
 
-    kiara = ktx.kiara
-    processor = kiara.default_processor
+    processor = st.kiara.default_processor
     pipeline_id = "__na__"
     job_id = processor.start(
         pipeline_id=pipeline_id,
@@ -218,7 +218,7 @@ if run_button:
     else:
         run()
 
-ktx.valueset_info(
+st.kiara.write_valueset(
     output_slots,
     fields=(k for k, v in preview_map_output.items() if v),
     add_save_option=True,

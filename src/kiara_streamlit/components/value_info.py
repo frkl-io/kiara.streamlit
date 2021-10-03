@@ -91,7 +91,7 @@ class KiaraValueInfoComponentsMixin(KiaraComponentMixin):
     #
     #     container.write(md)
 
-    def valueset_info(
+    def write_valueset(
         self,
         value_set: typing.Union[ValueSet, typing.Mapping[str, Value]],
         fields: typing.Optional[typing.Iterable[str]] = None,

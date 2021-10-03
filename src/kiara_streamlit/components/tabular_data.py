@@ -156,7 +156,7 @@ class TableComponentsMixin(KiaraComponentMixin):
         container.subheader("Query result")
 
         if op_outputs and op_outputs.items_are_valid():
-            self.valueset_info(op_outputs, container=container)  # type: ignore
+            self.write_valueset(op_outputs, container=container)  # type: ignore
         else:
             container.write("-- no result --")
 

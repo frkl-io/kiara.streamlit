@@ -354,7 +354,7 @@ class StagePage(PipelinePage):
         for step_id in self.get_step_ids_for_stage(self._stage):
             step_outputs_exp.write(f"#### Step output: '{step_id}")
             _outputs = self.get_step_outputs(step_id)
-            self.ktx.valueset_info(_outputs, container=step_outputs_exp)
+            self.ktx.write_valueset(_outputs, container=step_outputs_exp)
 
         st.markdown("#### Pipeline outputs")
         outputs = self.get_pipeline_outputs_for_stage(self._stage)

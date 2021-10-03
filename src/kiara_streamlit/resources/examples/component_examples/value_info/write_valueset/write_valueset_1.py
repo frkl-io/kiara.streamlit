@@ -17,6 +17,6 @@ inputs = {"table": st.kiara.get_value("journal_nodes_table"), "query": query}
 
 try:
     op_results = st.kiara.get_operation(op_id).run(**inputs)
-    st.kiara.valueset_info(value_set=op_results, add_save_option=True)
+    st.kiara.write_valueset(value_set=op_results, add_save_option=True)
 except Exception as e:
     st.error(f"Query failed: {e}")

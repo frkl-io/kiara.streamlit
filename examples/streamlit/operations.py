@@ -2,11 +2,10 @@
 import streamlit as st
 
 import kiara_streamlit
-from kiara_streamlit import KiaraStreamlit
-
-kiara_streamlit.init()
 
 st.set_page_config(page_title="Kiara experiment: dynamic operation", layout="centered")
+
+kiara_streamlit.init()
 
 st.header("Dynamic module input/output generation")
 
@@ -37,25 +36,23 @@ Some operations that are interesting to try out:
 """
 
 
-ktx: KiaraStreamlit = st.get_ktx()
-
 st.markdown(desc)
 
-operation_id = st.selectbox(
-    "Select operation", ktx.kiara.operation_mgmt.profiles.keys()
-)
+operation_id = st.selectbox("Select operation", st.kiara.operation_mgmt.profiles.keys())
 
 st.title(f"Operation: {operation_id}")
 
-operation = ktx.get_operation(operation_id)
+operation = st.kiara.get_operation(operation_id)
 st.markdown(operation.doc.full_doc)
 
 result = {}
 st.header("Inputs")
 
-op_inputs = ktx.operation_inputs(operation, defaults={"query": "select * from data"})
+op_inputs = st.kiara.operation_inputs(
+    operation, defaults={"query": "select * from data"}
+)
 
 run_button = st.button("Run")
 if run_button:
-    op_outputs = ktx.run_operation(operation, inputs=op_inputs)
-    ktx.valueset_info(op_outputs)
+    op_outputs = st.kiara.run(operation, inputs=op_inputs)
+    st.kiara.write_valueset(op_outputs)
