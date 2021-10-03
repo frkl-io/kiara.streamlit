@@ -106,7 +106,7 @@ class KiaraValueInfoComponentsMixin(KiaraComponentMixin):
         This is useful if you don't know in advance with which types of value sets you will be dealing with. This component
         will render an appropriate set of UI elements, either in a row (as columns), or one after the other.
 
-        IF using the column display option, 'save' is not supported at the moment.
+        If using the column display option, 'save' is not supported at the moment.
         """
         if fields:
             _value_set = {}
