@@ -24,7 +24,6 @@ class KiaraOperationComponentsMixin(KiaraComponentMixin):
         for example like:
 
         ``` python
-
         op_id = "table.cut_column"
         inputs = st.kiara.operation_inputs(op_id)
         op_results = kiara.get_operation(op_id).run(**inputs)

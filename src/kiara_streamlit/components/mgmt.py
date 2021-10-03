@@ -192,6 +192,7 @@ class ExampleCode(object):
         new_code_lines = []
 
         first_line = False
+        last_line_empty = False
         for lineno, line in enumerate(self._full_source_code.split("\n"), start=1):
 
             if lineno in transformer.lines_to_remove:
@@ -201,9 +202,15 @@ class ExampleCode(object):
                 continue
 
             first_line = True
-            new_code_lines.append(line)
+            line_empty = True if not line.strip() else False
+            if line_empty and last_line_empty:
+                continue
 
-        self._minimal_source_code = "\n".join(new_code_lines)
+            new_code_lines.append(line)
+            last_line_empty = line_empty
+
+        _new_lines = "\n".join(new_code_lines)
+        self._minimal_source_code = _new_lines
 
 
 class AllComponentsMixin(
