@@ -1,0 +1,12 @@
+# -*- coding: utf-8 -*-
+
+"""{{ example_doc | default("TODO: example documentation", true) }}
+"""
+
+import kiara_streamlit
+import streamlit as st
+
+kiara_streamlit.init()
+
+result = st.kiara.{{ component_name }}({{ example_args | default("arg1='x', arg2='y'", true) }})
+st.write(result)

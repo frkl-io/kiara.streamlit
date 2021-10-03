@@ -1,0 +1,35 @@
+{
+  "module_type_name": "onboard_network_nodes",
+  "steps": [
+    {
+      "module_type": "file.import_from.local.file_path",
+      "module_config": {
+        "constants": {
+          "save": false,
+          "aliases": []
+        }
+      },
+      "step_id": "onboard_nodes_source_file"
+    },
+    {
+      "module_type": "table.convert",
+      "module_config": {
+        "source_type": "file",
+        "target_type": "table",
+        "allow_none_input": true,
+        "ignore_errors": false
+      },
+      "step_id": "create_nodes_table",
+      "input_links": {
+        "value_item": "onboard_nodes_source_file.value_item"
+      }
+    }
+  ],
+  "input_aliases": {
+    "onboard_nodes_source_file__source": "nodes_path"
+  },
+  "output_aliases": {
+    "onboard_nodes_source_file__value_item": "nodes_table_source",
+    "create_nodes_table__value_item": "nodes_table"
+  }
+}

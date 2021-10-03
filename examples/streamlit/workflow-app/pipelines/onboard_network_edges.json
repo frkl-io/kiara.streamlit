@@ -1,0 +1,29 @@
+{
+  "module_type_name": "onboard_network_edges",
+  "steps": [
+    {
+      "module_type": "file.import_from.local.file_path",
+      "module_config": {
+        "constants": {
+          "save": false,
+          "aliases": []
+        }
+      },
+      "step_id": "onboard_edges_source_file"
+    },
+    {
+      "module_type": "file.convert_to.table",
+      "step_id": "create_edges_table",
+      "input_links": {
+        "value_item": "onboard_edges_source_file.value_item"
+      }
+    }
+  ],
+  "input_aliases": {
+    "onboard_edges_source_file__source": "edges_path"
+  },
+  "output_aliases": {
+    "onboard_edges_source_file__value_item": "edges_table_source",
+    "create_edges_table__value_item": "edges_table"
+  }
+}

@@ -1,0 +1,35 @@
+{% set name = "kiara.streamlit" %}
+{% set version = "__VERSION__" %}
+
+package:
+  name: "{{ name|lower }}"
+  version: "{{ version }}"
+
+
+source:
+  git_rev: "{{ version }}"
+  git_url: https://github.com/frkl-io/kiara_modules.streamlit.git
+
+
+build:
+  number: 0
+  script: "{{ PYTHON }} -m pip install --no-deps . -vv"
+
+requirements:
+  host:
+    - pip
+    - python
+    - setuptools_scm
+    - setuptools_scm_git_archive
+  run:
+    - python
+    - kiara
+
+about:
+  home: https://github.com/frkl-io/kiara_modules.streamlit
+  license: AGPL-3.0-only
+  summary: "A set of modules (and pipelines) for kiara."
+
+extra:
+  recipe-maintainers:
+    - makkus

@@ -1,0 +1,19 @@
+{
+  "template": "https://github.com/DHARPA-Project/kiara_modules.project_template.git",
+  "commit": "8420c36c9e228483394b3a9920db316f7d449331",
+  "context": {
+    "cookiecutter": {
+      "full_name": "Markus Binsteiner",
+      "email": "markus@frkl.io",
+      "project_name": "streamlit",
+      "project_slug": "streamlit",
+      "project_short_description": "A kiara workflow rendered in streamlit.",
+      "_extensions": [
+        "cookiecutter.extensions.JsonifyExtension"
+      ],
+      "_template": "https://github.com/DHARPA-Project/kiara_modules.project_template.git"
+    }
+  },
+  "directory": null,
+  "checkout": null
+}

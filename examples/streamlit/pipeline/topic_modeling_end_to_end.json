@@ -1,0 +1,178 @@
+{
+  "module_type_name": "topic_modeling_end_to_end",
+  "documentation": "Topic modelling dev pipeline.",
+  "steps": [
+    {
+      "module_type": "file_bundle.import",
+      "module_config": {
+        "source_profile": "local",
+        "source_type": "folder_path",
+        "allow_save_input": false,
+        "save_default": false
+      },
+      "step_id": "import_file"
+    },
+    {
+      "module_type": "file_bundle.convert_to.table",
+      "module_config": {
+        "ignore_errors": true
+      },
+      "step_id": "create_table_from_files",
+      "input_links": {
+        "value_item": "import_file.value_item"
+      }
+    },
+    {
+      "module_type": "table.cut_column",
+      "module_config": {
+        "constants": {
+          "column_name": "file_name"
+        }
+      },
+      "step_id": "cut_filename_column",
+      "input_links": {
+        "table": "create_table_from_files.value_item"
+      }
+    },
+    {
+      "module_type": "array.map",
+      "module_config": {
+        "module_type": "date.extract_from_string"
+      },
+      "step_id": "extract_date_from_file_name",
+      "input_links": {
+        "array": "cut_filename_column.array"
+      }
+    },
+    {
+      "module_type": "array.map",
+      "module_config": {
+        "module_type": "string.match_regex",
+        "module_config": {
+          "regex": "(\\w+\\d+)_\\d{4}-\\d{2}-\\d{2}_",
+          "only_first_match": true
+        }
+      },
+      "step_id": "extract_ref_from_file_name",
+      "input_links": {
+        "array": "cut_filename_column.array"
+      }
+    },
+    {
+      "module_type": "array.map",
+      "module_config": {
+        "module_type": "string.replace",
+        "module_config": {
+          "replacement_map": {
+            "sn85066408": "L\\'Italia",
+            "2012271201": "Cronaca Sovversiva"
+          }
+        }
+      },
+      "step_id": "lookup_publication_name",
+      "input_links": {
+        "array": "extract_ref_from_file_name.array"
+      }
+    },
+    {
+      "module_type": "table.merge",
+      "module_config": {
+        "input_schema": {
+          "table": {
+            "type": "table"
+          },
+          "date_column": {
+            "type": "array"
+          },
+          "ref_column": {
+            "type": "array"
+          },
+          "pub_name_column": {
+            "type": "array"
+          }
+        }
+      },
+      "step_id": "merged_table",
+      "input_links": {
+        "table": "create_table_from_files.value_item",
+        "date_column": "extract_date_from_file_name.array",
+        "ref_column": "extract_ref_from_file_name.array",
+        "pub_name_column": "lookup_publication_name.array"
+      }
+    },
+    {
+      "module_type": "array.map",
+      "module_config": {
+        "module_type": "date.range_check",
+        "input_name": "date"
+      },
+      "step_id": "create_date_range_filter",
+      "input_links": {
+        "array": "extract_date_from_file_name"
+      }
+    },
+    {
+      "module_type": "table.filter.with_mask",
+      "step_id": "filtered_table",
+      "input_links": {
+        "table": "merged_table.table",
+        "mask": "create_date_range_filter.array"
+      }
+    },
+    {
+      "module_type": "table.cut_column",
+      "module_config": {
+        "constants": {
+          "column_name": "content"
+        }
+      },
+      "step_id": "cut_content_column",
+      "input_links": {
+        "table": "filtered_table"
+      }
+    },
+    {
+      "module_type": "array.map",
+      "module_config": {
+        "module_type": "language.tokens.tokenize_text",
+        "input_name": "text"
+      },
+      "step_id": "tokenize_text_corpus",
+      "input_links": {
+        "array": "cut_content_column.array"
+      }
+    },
+    {
+      "module_type": "language.tokens.remove_stopwords",
+      "step_id": "remove_stopwords",
+      "input_links": {
+        "token_lists": "tokenize_text_corpus.array"
+      }
+    },
+    {
+      "module_type": "language.lemmatize.tokens_array",
+      "step_id": "lemmatize_corpus",
+      "input_links": {
+        "tokens_array": "remove_stopwords.token_list"
+      }
+    },
+    {
+      "module_type": "language.lda.LDA",
+      "step_id": "generate_lda",
+      "input_links": {
+        "tokens_array": "lemmatize_corpus.tokens_array"
+      }
+    }
+  ],
+  "input_aliases": {
+    "import_file__source": "path",
+    "create_date_range_filter__earliest": "earliest",
+    "create_date_range_filter__latest": "latest",
+    "remove_stopwords__languages": "languages",
+    "remove_stopwords__additional_stopwords": "additional_stopwords",
+    "generate_lda__num_topics": "num_topics",
+    "generate_lda__compute_coherence": "compute_coherence"
+  },
+  "output_aliases": "auto"
+}
+
