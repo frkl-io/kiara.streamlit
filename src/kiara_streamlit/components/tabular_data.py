@@ -27,7 +27,7 @@ class TableComponentsMixin(KiaraComponentMixin):
     ):
         """Render a sql query editor.
 
-        This component is very configurable. If you don't provied a 'table_name' argument, a selectbox will be rendered
+        This component has a few configuration options (to be documented). If you don't provide a 'table_name' argument, a selectbox will be rendered
         that lets the user choose one of the tables in the kiara data store.
         There are also options to show/hide other usability helpers like a source table preview, sampling option, etc.
         """
