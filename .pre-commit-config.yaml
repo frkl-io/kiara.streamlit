@@ -45,7 +45,7 @@ repos:
     pass_filenames: true
     args: ["--config-file", "setup.cfg", "--ignore-missing-imports", "--explicit-package-bases"]
     additional_dependencies: [pydantic>=1.8.0, rich>=10.0.0, ruamel.yaml]
-
+    exclude: "src/kiara_streamlit/resources"
 
 - repo: git://github.com/pre-commit/pre-commit-hooks
   rev: 'v4.0.1'
