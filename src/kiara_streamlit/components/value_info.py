@@ -11,6 +11,12 @@ from kiara_streamlit.components import KiaraComponentMixin
 
 class KiaraValueInfoComponentsMixin(KiaraComponentMixin):
     def write_value(self, value: Value, container: DeltaGenerator = st):
+        """Write a value of any (supported) type to a streamlit page/component.
+
+        This auto-selects the appropriate component, based on the values 'type_name' attribute.
+        Currently supported types: 'array', 'table', 'network_graph', 'dict'. All other types will be written using the
+        generic `st.write(...)` method.
+        """
         if (
             value is None
             or not value.item_is_valid()
