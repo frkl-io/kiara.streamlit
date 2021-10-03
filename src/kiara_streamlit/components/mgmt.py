@@ -197,7 +197,7 @@ class ExampleCode(object):
             if lineno in transformer.lines_to_remove:
                 continue
 
-            if (not line or line.startswith("# -*- ")) and not first_line:
+            if (not line or line.startswith("# ")) and not first_line:
                 continue
 
             first_line = True

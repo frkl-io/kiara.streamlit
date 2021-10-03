@@ -1,8 +1,8 @@
 # -*- coding: utf-8 -*-
+# type: ignore
 
 """Select a file and print the first few lines of its content.
 """
-
 import streamlit as st
 from kiara.data import Value
 from kiara_modules.core.metadata_schemas import KiaraFile
