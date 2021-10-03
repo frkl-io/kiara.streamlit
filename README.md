@@ -2,7 +2,7 @@
 [![PyPI version](https://img.shields.io/pypi/v/kiara.streamlit.svg)](https://pypi.python.org/pypi/kiara.streamlit/)
 [![PyPI pyversions](https://img.shields.io/pypi/pyversions/kiara.streamlit.svg)](https://pypi.python.org/pypi/kiara.streamlit/)
 [![Build Status](https://img.shields.io/endpoint.svg?url=https%3A%2F%2Factions-badge.atrox.dev%2FDHARPA-Project%2Fkiara%2Fbadge%3Fref%3Ddevelop&style=flat)](https://actions-badge.atrox.dev/DHARPA-Project/kiara.streamlit/goto?ref=develop)
-[![Coverage Status](https://coveralls.io/repos/github/DHARPA-Project/kiara_modules.streamlit/badge.svg?branch=develop)](https://coveralls.io/github/frkl-io/kiara.streamlit?branch=develop)
+[![Coverage Status](https://coveralls.io/repos/github/frkl-io/kiara.streamlit/badge.svg?branch=develop)](https://coveralls.io/github/frkl-io/kiara.streamlit?branch=develop)
 [![Code style](https://img.shields.io/badge/code%20style-black-000000.svg)](https://github.com/ambv/black)
 
 # Streamlit components for *kiara*

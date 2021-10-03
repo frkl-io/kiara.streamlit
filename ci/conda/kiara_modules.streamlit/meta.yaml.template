@@ -8,7 +8,7 @@ package:
 
 source:
   git_rev: "{{ version }}"
-  git_url: https://github.com/frkl-io/kiara_modules.streamlit.git
+  git_url: https://github.com/frkl-io/kiara.streamlit.git
 
 
 build:
@@ -26,7 +26,7 @@ requirements:
     - kiara
 
 about:
-  home: https://github.com/frkl-io/kiara_modules.streamlit
+  home: https://github.com/frkl-io/kiara.streamlit
   license: AGPL-3.0-only
   summary: "A set of modules (and pipelines) for kiara."
 
