@@ -1,4 +1,5 @@
 # -*- coding: utf-8 -*-
+import json
 import os
 import typing
 
@@ -29,52 +30,49 @@ if module_name:
 
 st.sidebar.markdown("## Settings")
 
-kiara_streamlit.init()
+_kiara_config = os.environ.get("KIARA_CONFIG", None)
+if _kiara_config:
+    kiara_config = json.loads(_kiara_config)
 
-if not module_name:
-    module_name = st.selectbox(
-        "Select module:",
-        [""] + st.kiara.available_non_pipeline_module_types,
-    )
-    if module_name == "":
-        st.write("No module selected, doing nothing...")
-        st.stop()
+kiara_streamlit.init(kiara_config=kiara_config)
 
-m_cls = st.kiara.get_module_class(module_type=module_name)  # type: ignore
-assert m_cls is not None
-mod_conf = m_cls._config_cls
-if mod_conf.requires_config():
-    st.write("Module requires config, this is not supported yet.")
+allow_module_config = True
+module = st.kiara.module_select(
+    module_name=module_name,
+    allow_module_config=allow_module_config,
+    key="module_select_box_dev",
+)
+
+if module is None:
     st.stop()
 
-operation = st.kiara.get_operation(module_name)  # type: ignore
-st.markdown(operation.doc.full_doc)
-
-st.markdown("---")
+st.header("Module documentation")
+full_doc = module.get_type_metadata().documentation.full_doc
+st.markdown(full_doc)
 
 st.header("Inputs")
 
 input_slots = None
 if f"{module_name}_input_slots" in st.session_state:
     input_slots = st.session_state[f"{module_name}_input_slots"]
-    if len(input_slots) != len(operation.input_schemas):
+    if len(input_slots) != len(module.input_schemas):
         st.session_state.pop(f"{module_name}_input_slots")
         input_slots = None
     else:
-        for field, schema in operation.input_schemas.items():
+        for field, schema in module.input_schemas.items():
             _temp = input_slots.get(field, None)
             if not _temp:
                 st.session_state.pop(f"{module_name}_input_slots")
                 input_slots = None
                 break
-            elif schema.dict() != operation.input_schemas[field].dict():
+            elif schema.dict() != module.input_schemas[field].dict():
                 st.session_state.pop(f"{module_name}_input_slots")
                 input_slots = None
                 break
 
 if input_slots is None:
     input_slots = SlottedValueSet.from_schemas(
-        operation.input_schemas,
+        module.input_schemas,
         kiara=st.kiara,
         read_only=False,
         check_for_sameness=True,
@@ -85,30 +83,29 @@ if input_slots is None:
 output_slots = None
 if f"{module_name}_output_slots" in st.session_state:
     output_slots = st.session_state[f"{module_name}_output_slots"]
-    if len(output_slots) != len(operation.output_schemas):
+    if len(output_slots) != len(module.output_schemas):
         st.session_state.pop(f"{module_name}_output_slots")
         output_slots = None
     else:
-        for field, schema in operation.output_schemas.items():
+        for field, schema in module.output_schemas.items():
             _temp = output_slots.get(field, None)
             if not _temp:
                 st.session_state.pop(f"{module_name}_output_slots")
                 output_slots = None
                 break
-            elif schema.dict() != operation.output_schemas[field].dict():
+            elif schema.dict() != module.output_schemas[field].dict():
                 st.session_state.pop(f"{module_name}_output_slots")
                 output_slots = None
                 break
 
 if output_slots is None:
     output_slots = SlottedValueSet.from_schemas(
-        operation.output_schemas, kiara=st.kiara, read_only=False
+        module.output_schemas, kiara=st.kiara, read_only=False
     )
     st.session_state[f"{module_name}_output_slots"] = output_slots
 
-
-op_inputs = st.kiara.operation_inputs(
-    operation, key=f"operation_auto_render_{module_name}"
+op_inputs = st.kiara.valueset_input(
+    valueset_schema=module.input_schemas, key=f"module_auto_render_{module_name}"
 )
 
 # if "initial_values_set" not in st.session_state:
@@ -192,10 +189,11 @@ def run():
         pipeline_id=pipeline_id,
         pipeline_name=pipeline_id,
         step_id=pipeline_id,
-        module=operation.module,
+        module=module,
         inputs=input_slots,
         outputs=output_slots,
     )
+    processor.wait_for(job_id)
     job_details = processor.get_job_details(job_id)
     runtime = job_details.runtime
     if job_details.status == JobStatus.SUCCESS:

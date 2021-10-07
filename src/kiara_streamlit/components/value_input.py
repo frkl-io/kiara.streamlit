@@ -137,7 +137,7 @@ class KiaraInputComponentsMixin(KiaraComponentMixin):
                 _key = field_name
             input = self.value_input(
                 value_schema=value_schema,
-                label=field_name,
+                label=f"{field_name} ({value_schema.type})",
                 default=default,
                 key=_key,
                 container=columns_main[idx],
@@ -378,6 +378,29 @@ class KiaraInputComponentsMixin(KiaraComponentMixin):
         value = self.data_store.get_value_obj(alias)
         return value
 
+    def value_input_network_graph(
+        self,
+        label: str,
+        default: typing.Any = None,
+        key: typing.Optional[str] = None,
+        container: DeltaGenerator = st,
+    ) -> typing.Optional[Value]:
+        """Render a combobox that lets a user select a table (alias) and return the associated table."""
+
+        alias = self.value_select_box(
+            value_type="network_graph",
+            label=label,
+            default=default,
+            key=key,
+            container=container,
+        )
+
+        if not alias:
+            return None
+
+        value = self.data_store.get_value_obj(alias)
+        return value
+
     def value_input_array(
         self,
         label: str,
@@ -424,10 +447,8 @@ class KiaraInputComponentsMixin(KiaraComponentMixin):
 
     def value_input_dict(
         self,
-        value_schema: ValueSchema,
         label: str,
         default: typing.Any,
-        field_name: str,
         key: typing.Optional[str] = None,
         container: DeltaGenerator = str,
     ) -> typing.Optional[typing.Mapping]:
@@ -453,10 +474,8 @@ class KiaraInputComponentsMixin(KiaraComponentMixin):
 
     def value_input_list(
         self,
-        value_schema: ValueSchema,
         label: str,
         default: typing.Any,
-        field_name: str,
         key: typing.Optional[str] = None,
         container: DeltaGenerator = str,
     ) -> typing.Optional[typing.List]:

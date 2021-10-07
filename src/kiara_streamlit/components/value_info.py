@@ -3,6 +3,8 @@ import typing
 
 import streamlit as st
 from kiara.data import Value, ValueSet
+from kiara.data.values import ValueSchema
+from kiara.defaults import SpecialValue
 from networkx import Graph
 from streamlit.delta_generator import DeltaGenerator
 
@@ -155,3 +157,46 @@ class KiaraValueInfoComponentsMixin(KiaraComponentMixin):
                             print("SAVE")
                             value.save([alias])
                             # st.experimental_rerun()
+
+    def valueset_schema_info(
+        self,
+        valueset: typing.Mapping[str, typing.Union[str, ValueSchema, Value]],
+        show_required: bool = True,
+        show_default: bool = True,
+        container: DeltaGenerator = st,
+    ):
+        """Display schema info for a set of values as a markdown table."""
+
+        required = " required |" if show_required else ""
+        _default = " default |" if show_default else ""
+        md = f"| field name | type | {required} {_default} description |"
+        md = f"{md}\n| --- | --- | --- | --- |"
+        if show_required:
+            md = f"{md} --- |"
+        if show_default:
+            md = f"{md} --- |"
+        for field_name, schema in valueset.items():
+
+            if isinstance(schema, str):
+                _schema = ValueSchema(type=schema)
+            elif isinstance(schema, Value):
+                _schema = schema.value_schema
+            else:
+                _schema = schema
+
+            if show_required:
+                req = "yes |" if _schema.is_required() else "no |"
+            else:
+                req = ""
+            if show_default:
+                default = _schema.default
+                if default in [SpecialValue.NOT_SET, SpecialValue.NO_VALUE, None]:
+                    default = " |"
+                else:
+                    default = f"{default} |"
+            else:
+                default = ""
+            desc = _schema.doc
+            md = f"{md}\n|{field_name}|{_schema.type}|{req}{default}{desc}"
+
+        container.markdown(md)

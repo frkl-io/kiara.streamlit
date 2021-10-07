@@ -31,6 +31,7 @@ requirements:
     - streamlit-ace>=0.1.0
     - streamlit-aggrid>=0.2.0
     - streamlit-agraph>=0.0.35
+    - streamlit-pydantic>=0.4.0
 
 about:
   home: https://github.com/frkl-io/kiara.streamlit
