@@ -156,7 +156,7 @@ jobs:
       - name: install conda build packages
         run: conda install conda-build anaconda-client
       - name: build conda package
-        run: cd ci/conda/ && ./build-conda-packages.sh "kiara.streamlit" 0.0.1
+        run: cd ci/conda/ && ./build-conda-packages.sh "kiara.streamlit" develop
 
   publish_conda_package:
     name: publish conda package
