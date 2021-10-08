@@ -18,6 +18,7 @@ from streamlit.delta_generator import DeltaGenerator
 from kiara_streamlit.components import KiaraComponentMixin
 from kiara_streamlit.components.module import KiaraModuleComponentsMixin
 from kiara_streamlit.components.operations import KiaraOperationComponentsMixin
+from kiara_streamlit.components.processing import KiaraProcessingComponentsMixin
 from kiara_streamlit.components.tabular_data import TableComponentsMixin
 from kiara_streamlit.components.value_info import KiaraValueInfoComponentsMixin
 from kiara_streamlit.components.value_input import KiaraInputComponentsMixin
@@ -217,6 +218,7 @@ class ExampleCode(object):
 class AllComponentsMixin(
     # KiaraFileComponentsMixin,
     KiaraOperationComponentsMixin,
+    KiaraProcessingComponentsMixin,
     # KiaraPipelineComponentsMixin,
     KiaraModuleComponentsMixin,
     TableComponentsMixin,

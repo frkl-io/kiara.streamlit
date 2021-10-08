@@ -387,3 +387,38 @@ class KiaraModuleComponentsMixin(KiaraComponentMixin):
         md = f"{md}\n| Python class | {python_class} |"
 
         container.write(md)
+
+    def write_module_info_page(
+        self, module: KiaraModule, container: DeltaGenerator = st
+    ) -> None:
+
+        full_doc = module.get_type_metadata().documentation.full_doc
+
+        pipeline_str = ""
+        if module.is_pipeline() and not pipeline_str == "pipeline":
+            pipeline_str = " (pipeline module)"
+        container.markdown(
+            f"## Module documentation for: *{module._module_type_id}*{pipeline_str}"
+        )
+        container.markdown(full_doc)
+
+        st.markdown("## Module configuration")
+        st.kiara.write_module_config(module, container=container)
+
+        inp_col, out_col = st.columns(2)
+        inp_col.markdown("## Module inputs")
+
+        st.kiara.valueset_schema_info(module.input_schemas, container=inp_col)
+
+        out_col.markdown("## Module outputs")
+        st.kiara.valueset_schema_info(
+            module.output_schemas,
+            show_required=False,
+            show_default=False,
+            container=out_col,
+        )
+
+        container.markdown("## Metadata")
+        st.kiara.write_module_type_metadata(module=module, container=container)
+        container.markdown("## Source")
+        st.kiara.write_module_processing_code(module=module, container=container)
