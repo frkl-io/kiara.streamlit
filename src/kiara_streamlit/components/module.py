@@ -221,7 +221,7 @@ class KiaraModuleComponentsMixin(KiaraComponentMixin):
                 avail_modules.update(st.kiara.available_module_types)
 
             module_name = st.selectbox(
-                "Select module:",
+                "Select operation:",
                 [""] + sorted(avail_modules),
                 key=f"_{key}_module_select_",
             )
@@ -398,7 +398,7 @@ class KiaraModuleComponentsMixin(KiaraComponentMixin):
         if module.is_pipeline() and not pipeline_str == "pipeline":
             pipeline_str = " (pipeline module)"
         container.markdown(
-            f"## Module documentation for: *{module._module_type_id}*{pipeline_str}"
+            f"## Module documentation for: *{module._module_type_id}*{pipeline_str}"  # type: ignore
         )
         container.markdown(full_doc)
 

@@ -30,6 +30,8 @@ if module_name:
 _kiara_config = os.environ.get("KIARA_CONFIG", None)
 if _kiara_config:
     kiara_config = json.loads(_kiara_config)
+else:
+    kiara_config = {}
 
 kiara_streamlit.init(kiara_config=kiara_config)
 
