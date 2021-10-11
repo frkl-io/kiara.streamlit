@@ -185,7 +185,8 @@ jobs:
 #        run: echo "RELEASE_VERSION=${GITHUB_REF#refs/*/}" >> $GITHUB_ENV
       - name: build conda package
         shell: bash -l {0}
-        run: cd ci/conda/ && ./build-conda-packages.sh "kiara_modules.streamlit" "${GITHUB_REF#refs/*/}" false
+        run: cd ci/conda/ && ./build-conda-packages.sh "kiara.streamlit" "${GITHUB_REF#refs/*/}" false
+
   merge_tag_to_main:
     name: merge current tag to main branch
     runs-on: ubuntu-latest
