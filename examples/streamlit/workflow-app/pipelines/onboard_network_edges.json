@@ -3,12 +3,6 @@
   "steps": [
     {
       "module_type": "file.import_from.local.file_path",
-      "module_config": {
-        "constants": {
-          "save": false,
-          "aliases": []
-        }
-      },
       "step_id": "onboard_edges_source_file"
     },
     {

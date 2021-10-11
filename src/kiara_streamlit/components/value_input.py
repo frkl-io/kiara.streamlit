@@ -78,6 +78,7 @@ class KiaraInputComponentsMixin(KiaraComponentMixin):
             ValueSet, typing.Mapping[str, typing.Union[str, Value, ValueSchema]]
         ],
         defaults: typing.Optional[typing.Mapping[str, typing.Any]] = None,
+        expand_optional: bool = True,
         key: typing.Optional[str] = None,
         container: DeltaGenerator = st,
     ) -> typing.Mapping[str, typing.Any]:
@@ -145,7 +146,9 @@ class KiaraInputComponentsMixin(KiaraComponentMixin):
             result[field_name] = input
 
         if inputs_other:
-            other_inputs = container.expander("Optional inputs", expanded=False)
+            other_inputs = container.expander(
+                "Optional inputs", expanded=expand_optional
+            )
             columns_other = other_inputs.columns(len(inputs_other))
             for idx, (field_name, value_schema) in enumerate(inputs_other.items()):
                 default = defaults.get(field_name, None)

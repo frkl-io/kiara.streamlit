@@ -4,16 +4,14 @@ import os
 import streamlit as st
 
 import kiara_streamlit
-from kiara_streamlit import KiaraStreamlit
 from kiara_streamlit.pipelines import PipelineApp
-from kiara_streamlit.pipelines.pipeline_page import StagePage
+from kiara_streamlit.pipelines.pages.stage import StagePage
 
 st.set_page_config(page_title="Kiara-streamlit auto-rendered pipeline", layout="wide")
 
 pipelines_folder = os.path.join(os.path.dirname(__file__), "pipelines")
 
-kiara_streamlit.init(pipelines_folders=[pipelines_folder])
-ktx: KiaraStreamlit = st.get_ktx()
+kiara_streamlit.init({"extra_pipeline_folders": [pipelines_folder]})
 
 params = st.experimental_get_query_params()
 
@@ -36,9 +34,9 @@ def icon(icon_name):
 # remote_css('https://fonts.googleapis.com/icon?family=Material+Icons')
 
 pages = [
-    StagePage("Onboarding", 1),
-    StagePage("Column-mapping", 2),
-    StagePage("Augment graph", 3),
+    StagePage(id="Onboarding", config={"stage": 1}),
+    StagePage(id="Column-mapping", config={"stage": 2}),
+    StagePage(id="Augment graph", config={"stage": 3}),
 ]
 
 

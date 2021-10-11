@@ -50,9 +50,14 @@ class KiaraPipelineComponentsMixin(KiaraComponentMixin):
         self,
         pipeline: Pipeline,
         inputs: typing.Mapping[str, typing.Any],
-        render_results: bool = False,
+        render_errors: bool = True,
         container: DeltaGenerator = st,
     ) -> typing.Mapping[str, typing.Union[Value, Exception]]:
+        """Set one, several or all inputs of a pipeline.
+
+        If 'render_results' is set to True, an informational component about the status of each of the just set
+        inputs will be rendered.
+        """
 
         cleaned_inputs: typing.Dict[str, typing.Any] = {}
         result: typing.Dict[str, typing.Union[Value, Exception]] = {}
@@ -74,17 +79,18 @@ class KiaraPipelineComponentsMixin(KiaraComponentMixin):
             _set_result = pipeline.inputs.set_values(**cleaned_inputs)
             result.update(_set_result)
 
-        if render_results:
+        if render_errors:
 
             md = ""
             for field_name in sorted(result.keys()):
                 _result = result[field_name]
                 if isinstance(_result, Exception):
                     md = f"{md}\n* **{field_name}**: *{_result}*"
-                else:
-                    status = pipeline.inputs[field_name].item_status()
-                    md = f"{md}\n* **{field_name}**: *{status}*"
+                # else:
+                #     status = pipeline.inputs[field_name].item_status()
+                #     md = f"{md}\n* **{field_name}**: *{status}*"
 
-            container.markdown(md)
+            if md:
+                container.error(md)
 
         return result

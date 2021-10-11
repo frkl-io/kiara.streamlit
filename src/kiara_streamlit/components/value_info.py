@@ -7,12 +7,18 @@ from kiara.data.values import ValueSchema
 from kiara.defaults import SpecialValue
 from networkx import Graph
 from streamlit.delta_generator import DeltaGenerator
+from streamlit_observable import observable
 
 from kiara_streamlit.components import KiaraComponentMixin
 
 
 class KiaraValueInfoComponentsMixin(KiaraComponentMixin):
-    def write_value(self, value: Value, container: DeltaGenerator = st):
+    def write_value(
+        self,
+        value: Value,
+        key: typing.Optional[str] = None,
+        container: DeltaGenerator = st,
+    ):
         """Write a value of any (supported) type to a streamlit page/component.
 
         This auto-selects the appropriate component, based on the values 'type_name' attribute.
@@ -33,43 +39,34 @@ class KiaraValueInfoComponentsMixin(KiaraComponentMixin):
             elif value.type_name == "array":
                 data = data.to_pandas()
             elif value.type_name == "network_graph":
-                from streamlit_agraph import Config, Edge, Node, agraph
 
                 graph: Graph = value.get_value_data()
 
                 # nodes = [Node(id=i, label=str(i), size=200) for i in range(len(graph.nodes))]
                 # edges = [Edge(source=i, target=j, type="CURVE_SMOOTH") for (i,j) in graph.edges]
 
-                nodes: typing.Dict[typing.Hashable, Node] = {}
-                edges = []
+                nodes: typing.Dict[str, typing.Dict[str, typing.Any]] = {}
+                edges: typing.List[typing.Mapping[str, typing.Any]] = []
                 for (s, t) in graph.edges:
                     if s not in nodes.keys():
-                        nodes[s] = Node(id=s, label=str(s), size=200)
+                        nodes[s] = {"id": str(s), "group": 1}
                     if t not in nodes.keys():
-                        nodes[t] = Node(id=t, label=str(t), size=200)
+                        nodes[t] = {"id": str(t), "group": 1}
 
-                    edges.append(Edge(source=s, target=t, type="CURVE_SMOOTH"))
+                    edges.append({"source": str(s), "target": str(t), "value": 1})
 
-                config = Config(
-                    directed=True,
-                    nodeHighlightBehavior=False,
-                    highlightColor="#F7A7A6",  # or "blue"
-                    collapsible=False,
-                    node={"labelProperty": "label"},
-                    # **kwargs e.g. node_size=1000 or node_color="blue"
+                cleaned_data = {"nodes": list(nodes.values()), "links": edges}
+
+                observable(
+                    notebook="@d3/force-directed-graph",
+                    targets=["chart"],
+                    redefine={
+                        "data": cleaned_data,
+                    },
+                    key=key,
+                    observe=[],
                 )
-
-                data = agraph(nodes=nodes.values(), edges=edges, config=config)
-
-            # elif value.type_name == "network_graph":
-            #     observers = observable(
-            #         "Test",
-            #         notebook="@d3/force-directed-graph",
-            #         targets=["chart"],
-            #         redefine={
-            #             "data": {},
-            #         },
-            #     )
+                return
             elif hasattr(data, "dict"):
                 data = data.dict()
             else:
@@ -123,7 +120,13 @@ class KiaraValueInfoComponentsMixin(KiaraComponentMixin):
                 columns[idx].markdown(f"***{field_name}***")
                 columns[idx].caption(value.value_schema.doc)
 
-                self.write_value(value, container=columns[idx])
+                _key = key
+                if _key:
+                    _key = f"{_key}_write_value_{field_name}"
+                else:
+                    _key = f"write_value_{field_name}"
+
+                self.write_value(value, key=_key, container=columns[idx])
 
         else:
 
@@ -134,18 +137,18 @@ class KiaraValueInfoComponentsMixin(KiaraComponentMixin):
                 inner.markdown(f"***{field_name}***")
                 inner.caption(value.value_schema.doc)
 
-                self.write_value(value, container=inner)
+                _key = key
+                if _key:
+                    _key = f"{_key}_write_value_{field_name}"
+                else:
+                    _key = f"write_value_{field_name}"
+
+                self.write_value(value, container=inner, key=_key)
 
                 if add_save_option and value.is_set:
 
-                    _key = key
-                    if _key:
-                        _key = f"{_key}_{field_name}"
-                    else:
-                        _key = field_name
-
                     exp = inner.expander("Save result")
-                    alias = exp.text_input("Alias", key=_key)
+                    alias = exp.text_input("Alias", key=f"{_key}_alias_input")
                     save_button = exp.button("Save", key=f"{_key}_save")
 
                     if save_button:

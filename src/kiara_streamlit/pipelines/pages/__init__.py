@@ -1,8 +1,8 @@
 # -*- coding: utf-8 -*-
 import abc
 import typing
-import uuid
 
+import networkx as nx
 import streamlit as st
 from kiara import Pipeline
 from kiara.data import Value, ValueSet
@@ -11,19 +11,23 @@ from kiara.pipeline.controller.batch import BatchControllerManual
 from kiara.processing import Job, JobStatus
 from streamlit.delta_generator import DeltaGenerator
 
-from kiara_streamlit import KiaraStreamlit
 from kiara_streamlit.pipelines import PipelineApp
 
 
 class PipelinePage(abc.ABC):
     """A class to encapsulate a single page in a streamlit-rendered kiara pipeline."""
 
-    def __init__(self, title: str):
+    def __init__(
+        self, id: str, config: typing.Optional[typing.Mapping[str, typing.Any]] = None
+    ):
 
-        self._id: str = str(uuid.uuid4())
+        if config is None:
+            config = {}
 
         self._app: typing.Optional[PipelineApp] = None
-        self._title: str = title
+        self._id: str = id
+        self._config: typing.Mapping[str, typing.Any] = config
+        self._cache: typing.Dict[str, typing.Any] = {}
 
     @property
     def app(self) -> PipelineApp:
@@ -32,6 +36,16 @@ class PipelinePage(abc.ABC):
             raise Exception("App not initialized yet.")
 
         return self._app
+
+    @property
+    def page_config(self) -> typing.Mapping[str, typing.Any]:
+        return self._config
+
+    def get_page_key(self, sub_key: typing.Optional[str] = None) -> str:
+        if sub_key:
+            return f"_pipeline_page_{self.id}_{sub_key}"
+        else:
+            return f"_pipeline_page_{self.id}"
 
     def set_app(self, app: PipelineApp):
         self._app = app
@@ -50,11 +64,7 @@ class PipelinePage(abc.ABC):
 
     @property
     def title(self) -> str:
-        return self._title
-
-    @property
-    def ktx(self) -> KiaraStreamlit:
-        return self.app.kiara_streamlit
+        return self.page_config.get("title", self.id)
 
     def get_all_step_ids(self) -> typing.Iterable[str]:
 
@@ -143,15 +153,15 @@ class PipelinePage(abc.ABC):
     def set_pipeline_inputs(
         self,
         inputs: typing.Mapping[str, typing.Any],
-        render_results: bool = False,
+        render_errors: bool = True,
         container: DeltaGenerator = st,
     ) -> typing.Mapping[str, typing.Union[bool, Exception]]:
         """Set one or several pipeline inputs."""
 
-        return self.ktx.set_pipeline_inputs(
+        return st.kiara.set_pipeline_inputs(
             pipeline=self.pipeline,
             inputs=inputs,
-            render_results=render_results,
+            render_errors=render_errors,
             container=container,
         )
 
@@ -160,11 +170,93 @@ class PipelinePage(abc.ABC):
 
         return check_valueset_valid(value_set=value_set)
 
-    def get_invalid_values(
-        self, value_set: typing.Mapping[str, Value]
+    def check_stage_requirements_valid(
+        self, stage: int, render_details: bool = True, container: DeltaGenerator = st
+    ) -> bool:
+        """Check if all the required inputs for this stage are valid.
+
+        If 'render_details' is set to True, an error message with details for invalid inputs will be displayed if there
+        are any.
+        """
+
+        pipeline_status = self.pipeline_controller.check_inputs_status()
+        invalid_inputs = set()
+        for i in range(1, stage):
+            stage_status = pipeline_status[i]
+            for step_id, step_status in stage_status.items():
+                if step_status["required"]:
+                    invalid_inputs.update(step_status["invalid_inputs"])
+
+        if invalid_inputs:
+
+            if render_details:
+                md = (
+                    "Not ready to process this stage yet. Missing required step inputs:"
+                )
+                for ii in invalid_inputs:
+                    md = f"{md}\n  - {ii}"
+                md = f"{md}\n\nMake sure you have all required pipeline inputs set, and all required steps processed."
+                container.error(md)
+
+            return False
+        else:
+            return True
+
+    def check_step_requirements_valid(
+        self, step_id: str, render_details: bool = True, container: DeltaGenerator = st
     ) -> typing.List[str]:
 
-        return sorted((k for k, v in value_set.items() if not v.item_is_valid()))
+        execution_graph: nx.DiGraph = self.pipeline.structure.execution_graph
+
+        requirements = set()
+        for node in execution_graph.nodes:
+            if node in [step_id, "__root__"]:
+                continue
+            try:
+                shortest_path = nx.shortest_path(execution_graph, node, step_id)
+                shortest_path.remove(step_id)
+                for item in shortest_path:
+                    if self.pipeline.get_step(item).required:
+                        requirements.add(item)
+            except Exception:
+                # means no path
+                pass
+
+        not_ready = []
+        for step_id in requirements:
+            if not self.pipeline_controller.step_is_finished(step_id=step_id):
+                not_ready.append(step_id)
+
+        if render_details and not_ready:
+            md = "Not ready to process this step yet. Missing required step(s):"
+            for step_id in not_ready:
+                md = f"{md}\n  - {step_id}"
+
+            container.error(md)
+
+        return not_ready
+
+    def check_invalid_values(
+        self,
+        value_set: typing.Mapping[str, Value],
+        render_error: bool = False,
+        error_title: str = "Invalid inputs:",
+        container: DeltaGenerator = st,
+    ) -> typing.List[str]:
+        """Check whether the provided value set has any invalid inputs, if, return their field names.
+
+        If 'render_error' is set to True, an error message is displayed if any invalid found.
+        """
+
+        invalid = sorted((k for k, v in value_set.items() if not v.item_is_valid()))
+
+        if render_error and invalid:
+            md = error_title
+            for i in invalid:
+                md = f"{md}\n  - {i}"
+            container.error(md)
+
+        return invalid
 
     def get_step_inputs(self, step_id: str) -> ValueSet:
 
@@ -196,6 +288,15 @@ class PipelinePage(abc.ABC):
             raise Exception(f"No job for job or step id: {job_or_step_id}.")
         return job
 
+    def render_step_processing_result(
+        self,
+        result: str,
+        container: DeltaGenerator = st,
+    ):
+        """Render the result of a step processing command into the specified container."""
+
+        container.write(result)
+
     def render_stage_processing_result(
         self,
         result: typing.Mapping[
@@ -222,10 +323,10 @@ class PipelinePage(abc.ABC):
         details = result.get(only_stage, None)
 
         if not details:
-            expander = container.expander(
-                "Processing details (Skipped)", expanded=False
-            )
-            expander.write(f"No processing done for stage '{only_stage}'.")
+            # expander = container.expander(
+            #     "Processing details (Skipped)", expanded=False
+            # )
+            # expander.write(f"No processing done for stage '{only_stage}'.")
             return
 
         results = {}
@@ -250,115 +351,77 @@ class PipelinePage(abc.ABC):
                     failed = True
                     break
 
+        md = "#### Processing log"
         if failed:
-            expander = container.expander("Processing details (Failed)", expanded=False)
+            md = f"{md} (failed)"
         else:
-            expander = container.expander(
-                "Processing details (Success)", expanded=False
-            )
+            md = f"{md} (success)"
 
         for step_id, job_id in details.items():
 
-            expander.markdown(f"#### Details for processing step: {step_id}")
+            md = f"{md}\n  - step '{step_id}'"
             if job_id is None:
-                expander.write("-- skipped --")
+                md = f"{md} (skipped)"
             elif isinstance(job_id, Exception):
-                expander.write(str(job_id))
-                expander.write(job_id)
+                md = f"{md} (failed):"
+                md = f"{md}\n    - {str(job_id)}"
             else:
                 job_details = self.pipeline_controller.get_job_details(job_id)
 
                 if job_details is None:
                     raise Exception(f"No job details for job id: {job_id}.")
-                runtime = job_details.runtime
-                if job_details.status == JobStatus.SUCCESS:
-                    expander.markdown(f"Success! Runtime: {runtime} seconds.")
-                elif job_details.status == JobStatus.FAILED:
-                    jl_c = expander.container()
-                    jl_c.error(
-                        f"Run failed: {job_details.error}. Runtime: {runtime} seconds."
-                    )
 
-                    if hasattr(job_details, "exception") and job_details.exception:
-                        jl_c.write(job_details.exception)
+                runtime = job_details.runtime
+
+                if job_details.status == JobStatus.SUCCESS:
+                    md = f"{md} (success): runtime: {runtime} sec"
+                elif job_details.status == JobStatus.FAILED:
+                    step = self.pipeline.get_step(step_id)
+                    if step.required:
+                        md = f"{md} (failed:\n    - error: {job_details.error}"
+                        md = f"{md}\n    - runtime: {runtime} sec"
+                    else:
+                        md = f"{md} (failed): not required"
 
                 outputs = self.pipeline.get_step_outputs(step_id=step_id)
                 results[step_id] = outputs
 
+        if failed:
+            container.error(md)
+        else:
+            container.markdown(md)
+
         return results
 
-    def process_step(self, step_id: str):
+    def process_step(
+        self,
+        step_id: str,
+        wait_for_processing_to_finish: bool = True,
+        render_result: bool = False,
+        container: DeltaGenerator = st,
+    ) -> str:
         """Process the specified step (incl. all steps of required stages that come before).
 
         Other steps in the same stage will not be processed.
         """
+        job_id = self.pipeline_controller.process_step(
+            step_id=step_id, wait=wait_for_processing_to_finish, raise_exception=False
+        )
 
-        raise NotImplementedError()
+        job = self.pipeline_controller.get_job_details(job_id)
+        if job.status == JobStatus.SUCCESS:
+            r = "Success"
+        elif job.status == JobStatus.FAILED:
+            r = f"Failed: {job.error}"
+
+        # process_result: typing.Mapping[str, typing.Union[None, str, Exception]] = r
+        process_result: str = r
+
+        if render_result and process_result:
+            self.render_step_processing_result(process_result, container=container)
+
+        return process_result
 
     @abc.abstractmethod
-    def run_page(self, st: DeltaGenerator, kiara_streamlit: KiaraStreamlit):
+    def run_page(self, st: DeltaGenerator):
         pass
-
-
-class StagePage(PipelinePage):
-    """A page that renders a UI for a specific pipeline stage."""
-
-    def __init__(self, title: str, stage: int):
-
-        self._stage: int = stage
-        super().__init__(title=title)
-
-    def run_page(self, st: DeltaGenerator, ktx: KiaraStreamlit):
-
-        base_key = f"_pipeline_{self.id}_{self._stage}"
-
-        stage_inputs = self.get_pipeline_inputs_for_stage(self._stage)
-
-        st.markdown("### Inputs")
-        stage_input_data = ktx.valueset_input(
-            stage_inputs, key=f"{base_key}_stage_inputs", defaults=stage_inputs
-        )
-        inputs_status_exp = st.expander("Inputs status", expanded=False)
-        self.set_pipeline_inputs(
-            inputs=stage_input_data, render_results=True, container=inputs_status_exp
-        )
-
-        stage_inputs = self.get_pipeline_inputs_for_stage(self._stage)
-
-        process_columns = st.columns((2, 8))
-        process_result_placeholder = process_columns[1]
-        result_container = process_result_placeholder.empty()
-
-        process_btn = process_columns[0].button(
-            "Process", key=f"{base_key}_process_button"
-        )
-
-        if process_btn:
-            invalid = self.get_invalid_values(stage_inputs)
-            if invalid:
-                _exp = result_container.expander("Processing details (skipped)")
-                _exp.write(
-                    f"Not processing stage, inputs contain invalid items: {', '.join(invalid)}."
-                )
-            else:
-                self.process_stage(
-                    self._stage, render_result=True, container=result_container
-                )
-
-        else:
-            _exp = result_container.expander("Processing details")
-            _exp.write("-- n/a --")
-
-        st.markdown("### Outputs")
-        step_outputs_exp = st.expander("Step outputs", expanded=False)
-        for step_id in self.get_step_ids_for_stage(self._stage):
-            step_outputs_exp.write(f"#### Step output: '{step_id}")
-            _outputs = self.get_step_outputs(step_id)
-            self.ktx.write_valueset(_outputs, container=step_outputs_exp)
-
-        st.markdown("#### Pipeline outputs")
-        outputs = self.get_pipeline_outputs_for_stage(self._stage)
-        if not outputs:
-            st.markdown("This stage does not contribute an overall pipeline output.")
-        else:
-            st.markdown(outputs)
