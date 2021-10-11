@@ -409,6 +409,8 @@ class PipelinePage(abc.ABC):
         )
 
         job = self.pipeline_controller.get_job_details(job_id)
+        assert job is not None
+
         if job.status == JobStatus.SUCCESS:
             r = "Success"
         elif job.status == JobStatus.FAILED:
