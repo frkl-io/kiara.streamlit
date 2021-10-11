@@ -177,11 +177,11 @@ jobs:
           activate-environment: "anaconda-build-env"
       - name: install conda build packages
         run: conda install -n anaconda-build-env conda-build anaconda-client
-      - name: extract tag name
-        run: echo "RELEASE_VERSION=${GITHUB_REF#refs/*/}" >> $GITHUB_ENV
+#      - name: extract tag name
+#        run: echo "RELEASE_VERSION=${GITHUB_REF#refs/*/}" >> $GITHUB_ENV
       - name: build conda package
-        run: cd ci/conda/ && ./build-conda-packages.sh "kiara.streamlit" "${RELEASE_VERSION}" false
-
+        shell: bash -l {0}
+        run: cd ci/conda/ && ./build-conda-packages.sh "kiara_modules.streamlit" "${GITHUB_REF#refs/*/}" false
   merge_tag_to_main:
     name: merge current tag to main branch
     runs-on: ubuntu-latest
