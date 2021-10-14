@@ -33,15 +33,24 @@ def icon(icon_name):
 # local_css("style.css")
 # remote_css('https://fonts.googleapis.com/icon?family=Material+Icons')
 
-pages = [
-    StagePage(id="Onboarding", config={"stage": 1}),
-    StagePage(id="Column-mapping", config={"stage": 2}),
-    StagePage(id="Augment graph", config={"stage": 3}),
-]
+# pages = [
+#     StagePage(id="Onboarding", config={"stage": 1}),
+#     StagePage(id="Column-mapping", config={"stage": 2}),
+#     StagePage(id="Augment graph", config={"stage": 3}),
+# ]
 
+pipeline = "/home/markus/projects/dharpa/kiara.streamlit/examples/streamlit/workflow-app/pipelines/workflow.json"
+pipeline = "/home/markus/projects/dharpa/kiara_modules.language_processing/examples/pipelines/topic_modeling_end_to_end.json"
 
 app = PipelineApp.create(
-    pipeline="/home/markus/projects/dharpa/kiara.streamlit/examples/streamlit/workflow-app/pipelines/workflow.json",
-    pages=pages,
+    pipeline=pipeline,
 )
+
+if not app.pages:
+    for idx, stage in enumerate(app.pipeline.structure.processing_stages, start=1):
+        inputs = app.pipeline.get_pipeline_inputs_for_stage(idx)
+        if inputs:
+            page = StagePage(f"stage: {idx}", config={"stage": idx})
+            app.add_page(page)
+
 app.run()

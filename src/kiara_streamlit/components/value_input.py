@@ -126,24 +126,26 @@ class KiaraInputComponentsMixin(KiaraComponentMixin):
         if not inputs_main:
             inputs_main = inputs_other
             inputs_other = {}
+
         result: typing.Dict[str, typing.Optional[Value]] = {}
-        columns_main = container.columns(len(inputs_main))
-        for idx, (field_name, value_schema) in enumerate(inputs_main.items()):
-            default = defaults.get(field_name, None)
-            if default in [SpecialValue.NO_VALUE, SpecialValue.NOT_SET]:
-                default = None
-            if key is not None:
-                _key = f"{key}_{field_name}"
-            else:
-                _key = field_name
-            input = self.value_input(
-                value_schema=value_schema,
-                label=f"{field_name} ({value_schema.type})",
-                default=default,
-                key=_key,
-                container=columns_main[idx],
-            )
-            result[field_name] = input
+        if inputs_main:
+            columns_main = container.columns(len(inputs_main))
+            for idx, (field_name, value_schema) in enumerate(inputs_main.items()):
+                default = defaults.get(field_name, None)
+                if default in [SpecialValue.NO_VALUE, SpecialValue.NOT_SET]:
+                    default = None
+                if key is not None:
+                    _key = f"{key}_{field_name}"
+                else:
+                    _key = field_name
+                input = self.value_input(
+                    value_schema=value_schema,
+                    label=f"{field_name} ({value_schema.type})",
+                    default=default,
+                    key=_key,
+                    container=columns_main[idx],
+                )
+                result[field_name] = input
 
         if inputs_other:
             other_inputs = container.expander(
@@ -158,6 +160,7 @@ class KiaraInputComponentsMixin(KiaraComponentMixin):
                     _key = f"{key}_{field_name}"
                 else:
                     _key = field_name
+
                 input = self.value_input(
                     value_schema=value_schema,
                     label=field_name,

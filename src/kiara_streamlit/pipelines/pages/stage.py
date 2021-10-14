@@ -9,8 +9,10 @@ from kiara_streamlit.pipelines.pages import PipelinePage
 class StagePage(PipelinePage):
     """A page that renders a UI for a specific pipeline stage."""
 
-    def __init__(self, id: str, config: typing.Mapping[str, typing.Any]):
+    def __init__(self, id: str, config: typing.Mapping[str, typing.Any] = None):
 
+        if config is None:
+            config = {}
         self._stage: int = config.get("stage", None)
         if self._stage is None:
             raise Exception(

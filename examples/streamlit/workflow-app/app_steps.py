@@ -32,13 +32,15 @@ def icon(icon_name):
 
 # local_css("style.css")
 # remote_css('https://fonts.googleapis.com/icon?family=Material+Icons')
+pipeline = "/home/markus/projects/dharpa/kiara.streamlit/examples/streamlit/workflow-app/pipelines/workflow.json"
+pipeline = "/home/markus/projects/dharpa/kiara_modules.language_processing/examples/pipelines/topic_modeling_end_to_end.json"
 
-app = PipelineApp.create(
-    pipeline="/home/markus/projects/dharpa/kiara.streamlit/examples/streamlit/workflow-app/pipelines/workflow.json",
-)
+app = PipelineApp.create(pipeline=pipeline)
 
 if not app.pages:
     for step_id in app.pipeline.step_ids:
+        # inputs = app.pipeline.get_pipeline_inputs_for_step(step_id)
+        # if inputs:
         page = StepPage(id=step_id)
         app.add_page(page)
 

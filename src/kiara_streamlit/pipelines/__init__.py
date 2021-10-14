@@ -32,7 +32,7 @@ class PipelineApp(object):
         if "__pipeline_app__" not in st.session_state:
 
             log_message(f"creating pipeline app for pipeline: {pipeline}")
-            app = PipelineApp(pipeline_path=pipeline)  # type: ignore
+            app = PipelineApp(pipeline=pipeline)  # type: ignore
             st.session_state["__pipeline_app__"] = app
 
             if pages:
@@ -44,10 +44,10 @@ class PipelineApp(object):
 
         return app
 
-    def __init__(self, pipeline_path: str, nav_horizontal: bool = False):
+    def __init__(self, pipeline: str, nav_horizontal: bool = False):
 
         self._pipeline_config: PipelineConfig = PipelineConfig.create_pipeline_config(
-            config=pipeline_path, kiara=st.kiara
+            config=pipeline, kiara=st.kiara
         )
         self._pipeline_controller = BatchControllerManual(kiara=st.kiara)
         self._pipeline: Pipeline = self._pipeline_config.create_pipeline(

@@ -123,7 +123,7 @@ class KiaraModuleComponentsMixin(KiaraComponentMixin):
             #     default = ""
             default = json.dumps(default)
             desc = details.description
-            md = f"{md}\n| {field_name} | {'yes' if details.required else 'no'} | {field_type} | {default} | {desc} |"
+            md = f"{md}\n| {field_name} | {field_type} | {'yes' if details.required else 'no'} | {default} | {desc} |"
         container.markdown(md)
 
     def write_module_config(
