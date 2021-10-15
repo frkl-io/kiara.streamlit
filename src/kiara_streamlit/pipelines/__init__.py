@@ -27,12 +27,13 @@ class PipelineApp(object):
         cls,
         pipeline: str,
         pages: typing.Optional[typing.Iterable["PipelinePage"]] = None,
+        config: typing.Optional[typing.Mapping[str, typing.Any]] = None,
     ) -> "PipelineApp":
 
         if "__pipeline_app__" not in st.session_state:
 
             log_message(f"creating pipeline app for pipeline: {pipeline}")
-            app = PipelineApp(pipeline=pipeline)  # type: ignore
+            app = PipelineApp(pipeline=pipeline, config=config)  # type: ignore
             st.session_state["__pipeline_app__"] = app
 
             if pages:
@@ -44,7 +45,11 @@ class PipelineApp(object):
 
         return app
 
-    def __init__(self, pipeline: str, nav_horizontal: bool = False):
+    def __init__(
+        self,
+        pipeline: str,
+        config: typing.Optional[typing.Mapping[str, typing.Any]] = None,
+    ):
 
         self._pipeline_config: PipelineConfig = PipelineConfig.create_pipeline_config(
             config=pipeline, kiara=st.kiara
@@ -54,7 +59,15 @@ class PipelineApp(object):
             controller=self._pipeline_controller, kiara=st.kiara
         )
         self._pages: typing.Dict[int, PipelinePage] = {}
-        self._nav_horizontal: bool = nav_horizontal
+
+        if config is None:
+            config = {}
+
+        self._config: typing.Mapping[str, typing.Any] = config
+
+        self._current_page: int = -1
+        self._previous_page: bool = False
+        self._next_page: bool = False
 
     @property
     def pipeline(self) -> Pipeline:
@@ -72,6 +85,65 @@ class PipelineApp(object):
 
         page.set_app(self)
         self._pages[len(self._pages) + 1] = page
+
+    def render_navigation(self, page_nr: int) -> int:
+
+        allowed = ["combobox", "buttons"]
+        nav_style = self._config.get("navigation_style", "combobox")
+
+        if nav_style not in allowed:
+            raise Exception(
+                f"Invalid configuration 'navigation_style': {nav_style} (allowed: '{', '.join(nav_style)}')"
+            )
+
+        add_page_nr = self._config.get("add_page_nr_to_page_item", True)
+
+        if nav_style == "buttons":
+            st.sidebar.markdown("## Workflow steps navigation")
+            for page_idx, page in self._pages.items():
+
+                if add_page_nr:
+                    page_title = f"{page_idx}. {page.title}"
+                else:
+                    page_title = page.title
+
+                key = f"_nav_{self._pipeline.id}_{page_title}_{page_idx}"
+                if nav_style == "buttons":
+                    if st.sidebar.button(page.title, key=key):
+                        result = page_idx
+        elif nav_style == "combobox":
+
+            if self._previous_page:
+                current = st.session_state.current_page
+                del st.session_state.current_page
+                st.session_state.current_page = current - 1
+            if self._next_page:
+                current = st.session_state.current_page
+                del st.session_state.current_page
+                st.session_state.current_page = current + 1
+
+            def format_title(page_nr):
+                page = self._pages[page_nr]
+                if add_page_nr:
+                    page_title = f"{page_nr}. {page.title}"
+                else:
+                    page_title = page.title
+                return page_title
+
+            result = st.sidebar.selectbox(
+                "Workflow steps navigation",
+                options=self._pages.keys(),
+                key="current_page",
+                format_func=format_title,
+            )
+
+        else:
+            raise NotImplementedError()
+
+        self._previous_page = False
+        self._next_page = False
+
+        return result
 
     def run(self):
 
@@ -91,27 +163,41 @@ class PipelineApp(object):
 
         if page_nr < 1:
             page_nr = 1
-            page_id = self._pages[1].id
 
         # selection = next(iter(self._pages.keys()))
-        if self._nav_horizontal:
-            raise NotImplementedError()
-        else:
-            md = "# Pages\n\n"
-            st.sidebar.markdown(md)
-            for page_idx, page in self._pages.items():
-                if st.sidebar.button(
-                    page.title, key=f"{self._pipeline.id}_{page.title}_{page_idx}"
-                ):
-                    page_nr = page_idx
-                    page_id = page.id
+        page_nr = self.render_navigation(page_nr)
 
-        st.sidebar.markdown("---\n# Info")
+        self._current_page = page_nr
+
         st.experimental_set_query_params(page=self._pages[page_nr].id)
-        print(f"Run page: {page_nr} - {page_id}")
+        print(f"Run page: {page_nr} - {self._pages[page_nr].id}")
 
         st.header(self._pages[page_nr].title)
         self._pages[page_nr].run_page(st=st)
 
-        status_expander = st.sidebar.expander("Pipeline status", expanded=False)
-        st.kiara.pipeline_status(pipeline=self._pipeline, container=status_expander)
+        if self._config.get("show_prev_and_next_buttons", False):
+            st.markdown("---")
+            left, _, right = st.columns([1, 8, 1])
+            if page_nr != min(self._pages.keys()):
+                back_button = left.button("previous")
+            else:
+                back_button = False
+            if page_nr != max(self._pages.keys()):
+                next_button = right.button("next")
+            else:
+                next_button = False
+
+            if self._config.get("show_pipeline_status", False):
+                st.sidebar.markdown("---\n# Info")
+                status_expander = st.sidebar.expander("Pipeline status", expanded=False)
+                st.kiara.pipeline_status(
+                    pipeline=self._pipeline, container=status_expander
+                )
+
+            if back_button:
+                self._previous_page = True
+                st.experimental_rerun()
+
+            if next_button:
+                self._next_page = True
+                st.experimental_rerun()

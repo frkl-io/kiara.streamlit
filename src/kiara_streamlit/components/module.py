@@ -406,11 +406,11 @@ class KiaraModuleComponentsMixin(KiaraComponentMixin):
         st.kiara.write_module_config(module, container=container)
 
         inp_col, out_col = st.columns(2)
-        inp_col.markdown("## Module inputs")
+        inp_col.markdown("## Operation inputs")
 
         st.kiara.valueset_schema_info(module.input_schemas, container=inp_col)
 
-        out_col.markdown("## Module outputs")
+        out_col.markdown("## Operation outputs")
         st.kiara.valueset_schema_info(
             module.output_schemas,
             show_required=False,
