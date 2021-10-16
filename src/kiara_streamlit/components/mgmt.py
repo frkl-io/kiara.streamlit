@@ -574,7 +574,12 @@ class ComponentMgmt(object):
             if example.doc.doc:
                 container.markdown(example.doc.doc)
             container.markdown(f"``` python\n{example.minimal_source_code}\n```")
-            exec(example.minimal_source_code, {"st": st})
+            try:
+                exec(example.minimal_source_code, {"st": st})
+            except Exception as e:
+                container.error(
+                    f"Can't render example component, error in example code: {e}"
+                )
             container.markdown("---")
 
     def create_component_example_file_from_template(
