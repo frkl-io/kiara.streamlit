@@ -24,14 +24,13 @@ class KiaraModuleComponentsMixin(KiaraComponentMixin):
         self,
         module_type: str,
         module_config: typing.Optional[typing.Mapping[str, typing.Any]] = None,
+        display_help: bool = True,
         key: typing.Optional[str] = None,
         container: DeltaGenerator = st,
     ) -> typing.Optional[ModuleTypeConfigSchema]:
         """Render a set of configuration components for a module config.
 
-        This component does not support the 'container' parameter, which will be ignored if provided.
-
-        Returns the config dict.
+        Returns the config object, or None if the configuration was invalid.
         """
 
         if not module_config:
@@ -51,7 +50,10 @@ class KiaraModuleComponentsMixin(KiaraComponentMixin):
                 module_config_default[field] = None
 
         json_str = json.dumps(module_config_default, indent=2)
-        edit_col, schema_col = container.columns(2)
+        if display_help:
+            edit_col, schema_col = container.columns(2)
+        else:
+            edit_col = container
         schema_col.write("Configuration schema")
         height = json_str.count("\n") * 32
         config_input = edit_col.text_area(
@@ -60,8 +62,9 @@ class KiaraModuleComponentsMixin(KiaraComponentMixin):
             height=height,
             help="Provide the module configuration in JSON format.",
         )
-        self.write_module_config_schema(module_type, container=schema_col)
-        schema_col.write("")
+        if display_help:
+            self.write_module_config_schema(module_type, container=schema_col)
+            schema_col.write("")
 
         try:
             result = json.loads(config_input)
@@ -101,6 +104,7 @@ class KiaraModuleComponentsMixin(KiaraComponentMixin):
         module: typing.Union[str, KiaraModule, typing.Type[KiaraModule]],
         container: DeltaGenerator = st,
     ) -> None:
+        """Print the configuration for a module type as table."""
 
         if not module:
             st.info("No module selected.")
@@ -133,6 +137,7 @@ class KiaraModuleComponentsMixin(KiaraComponentMixin):
         show_desc: bool = False,
         container: DeltaGenerator = st,
     ):
+        """Print out the configuration or a module as a table."""
 
         cmd = KiaraModuleConfigMetadata.from_config_class(module._config_cls)
 
@@ -201,7 +206,7 @@ class KiaraModuleComponentsMixin(KiaraComponentMixin):
     def module_select(
         self,
         module_name: typing.Optional[str] = None,
-        allow_module_config: bool = False,
+        allow_module_config: bool = True,
         key: typing.Optional[str] = None,
         container: DeltaGenerator = st,
     ) -> typing.Optional[KiaraModule]:
@@ -210,9 +215,8 @@ class KiaraModuleComponentsMixin(KiaraComponentMixin):
         If a module_name is provided, no selectbox will be rendered, and the provided module will be returned (or an error rendered
         if the module does not exist).
 
+        The return value is either None, or a module that was created with the users input (either only module name, or module name and config.
         """
-
-        show_module_edit_panel = True
 
         if not module_name:
 
@@ -260,7 +264,7 @@ class KiaraModuleComponentsMixin(KiaraComponentMixin):
         if resolved_module_name != module_name:
             container.markdown(f"Resolved module: `{resolved_module_name}`")
 
-        if show_module_edit_panel:
+        if allow_module_config:
             expanded = self.kiara.get_module_class(
                 module_type=resolved_module_name
             )._config_cls.requires_config(_module_config)
@@ -391,6 +395,7 @@ class KiaraModuleComponentsMixin(KiaraComponentMixin):
     def write_module_info_page(
         self, module: KiaraModule, container: DeltaGenerator = st
     ) -> None:
+        """Write all available information for a module."""
 
         full_doc = module.get_type_metadata().documentation.full_doc
 
@@ -402,10 +407,10 @@ class KiaraModuleComponentsMixin(KiaraComponentMixin):
         )
         container.markdown(full_doc)
 
-        st.markdown("## Module configuration")
+        container.markdown("## Module configuration")
         st.kiara.write_module_config(module, container=container)
 
-        inp_col, out_col = st.columns(2)
+        inp_col, out_col = container.columns(2)
         inp_col.markdown("## Operation inputs")
 
         st.kiara.valueset_schema_info(module.input_schemas, container=inp_col)
