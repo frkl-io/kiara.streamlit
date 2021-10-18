@@ -2,13 +2,12 @@
 import abc
 import typing
 
-import networkx as nx
 import streamlit as st
 from kiara import Pipeline
 from kiara.data import Value, ValueSet
 from kiara.data.values.value_set import check_valueset_valid
 from kiara.pipeline.controller.batch import BatchControllerManual
-from kiara.processing import Job, JobStatus
+from kiara.processing import Job
 from streamlit.delta_generator import DeltaGenerator
 
 from kiara_streamlit.pipelines import PipelineApp
@@ -179,62 +178,23 @@ class PipelinePage(abc.ABC):
         are any.
         """
 
-        pipeline_status = self.pipeline_controller.check_inputs_status()
-        invalid_inputs = set()
-        for i in range(1, stage):
-            stage_status = pipeline_status[i]
-            for step_id, step_status in stage_status.items():
-                if step_status["required"]:
-                    invalid_inputs.update(step_status["invalid_inputs"])
-
-        if invalid_inputs:
-
-            if render_details:
-                md = (
-                    "Not ready to process this stage yet. Missing required step inputs:"
-                )
-                for ii in invalid_inputs:
-                    md = f"{md}\n  - {ii}"
-                md = f"{md}\n\nMake sure you have all required pipeline inputs set, and all required steps processed."
-                container.error(md)
-
-            return False
-        else:
-            return True
+        return st.kiara.check_pipeline_stage_requirements_valid(
+            pipeline=self.pipeline,
+            stage=stage,
+            render_details=render_details,
+            container=container,
+        )
 
     def check_step_requirements_valid(
         self, step_id: str, render_details: bool = True, container: DeltaGenerator = st
     ) -> typing.List[str]:
 
-        execution_graph: nx.DiGraph = self.pipeline.structure.execution_graph
-
-        requirements = set()
-        for node in execution_graph.nodes:
-            if node in [step_id, "__root__"]:
-                continue
-            try:
-                shortest_path = nx.shortest_path(execution_graph, node, step_id)
-                shortest_path.remove(step_id)
-                for item in shortest_path:
-                    if self.pipeline.get_step(item).required:
-                        requirements.add(item)
-            except Exception:
-                # means no path
-                pass
-
-        not_ready = []
-        for step_id in requirements:
-            if not self.pipeline_controller.step_is_finished(step_id=step_id):
-                not_ready.append(step_id)
-
-        if render_details and not_ready:
-            md = "Not ready to process this step yet. Missing required step(s):"
-            for step_id in not_ready:
-                md = f"{md}\n  - {step_id}"
-
-            container.error(md)
-
-        return not_ready
+        return st.kiara.check_pipeline_step_requirements_valid(
+            pipeline=self.pipeline,
+            step_id=step_id,
+            render_details=render_details,
+            container=container,
+        )
 
     def check_invalid_values(
         self,
@@ -271,22 +231,18 @@ class PipelinePage(abc.ABC):
     ) -> typing.Mapping[int, typing.Mapping[str, typing.Union[None, str, Exception]]]:
         """Process all steps within the pipeline that are part of the specified stage (or a required stage below)."""
 
-        process_result: typing.Mapping[
-            int, typing.Mapping[str, typing.Union[None, str, Exception]]
-        ] = self.pipeline_controller.process_stage(stage_nr=stage_nr)
-        if render_result:
-            self.render_stage_processing_result(
-                process_result, only_stage=stage_nr, container=container
-            )
-
-        return process_result
+        return st.kiara.process_pipeline_stage(
+            pipeline=self.pipeline,
+            stage_nr=stage_nr,
+            render_result=render_result,
+            container=container,
+        )
 
     def get_processing_job_details(self, job_or_step_id: str) -> Job:
 
-        job = self.pipeline_controller.get_job_details(job_or_step_id)
-        if job is None:
-            raise Exception(f"No job for job or step id: {job_or_step_id}.")
-        return job
+        return st.kiara.get_pipeline_processing_job_details(
+            pipeline=self.pipeline, job_or_step_id=job_or_step_id
+        )
 
     def render_step_processing_result(
         self,
@@ -295,7 +251,9 @@ class PipelinePage(abc.ABC):
     ):
         """Render the result of a step processing command into the specified container."""
 
-        container.write(result)
+        st.kiara.render_pipeline_step_processing_result(
+            pipeline=self.pipeline, result=result, container=container
+        )
 
     def render_stage_processing_result(
         self,
@@ -307,91 +265,12 @@ class PipelinePage(abc.ABC):
     ):
         """Render the result of a stage processing command into the specified container."""
 
-        # exceptions = { field: d for field, d in result.items() if isinstance(d, Exception) }
-        #
-        # if exceptions:
-        #     expander = st.expander("Processing details (Errors)", expanded=True)
-        #     for step_id, exc in exceptions.items():
-        #         expander.markdown(f"#### Error in step: {step_id}")
-        #         expander.write(exc)
-        #     return None
-        # else:
-
-        if only_stage is None:
-            raise NotImplementedError()
-
-        details = result.get(only_stage, None)
-
-        if not details:
-            # expander = container.expander(
-            #     "Processing details (Skipped)", expanded=False
-            # )
-            # expander.write(f"No processing done for stage '{only_stage}'.")
-            return
-
-        results = {}
-
-        failed = False
-        for step_id, job_id in details.items():
-
-            if job_id is None:
-                # TODO: check, is this correct
-                failed = True
-                break
-            if isinstance(job_id, Exception):
-                failed = True
-                break
-
-            job_details = self.pipeline_controller.get_job_details(job_id)
-            if not job_details:
-                raise Exception(f"No job details for job id: {job_id}")
-            if job_details.status == JobStatus.FAILED:
-                step = self.pipeline.get_step(step_id)
-                if step.required:
-                    failed = True
-                    break
-
-        md = "#### Processing log"
-        if failed:
-            md = f"{md} (failed)"
-        else:
-            md = f"{md} (success)"
-
-        for step_id, job_id in details.items():
-
-            md = f"{md}\n  - step '{step_id}'"
-            if job_id is None:
-                md = f"{md} (skipped)"
-            elif isinstance(job_id, Exception):
-                md = f"{md} (failed):"
-                md = f"{md}\n    - {str(job_id)}"
-            else:
-                job_details = self.pipeline_controller.get_job_details(job_id)
-
-                if job_details is None:
-                    raise Exception(f"No job details for job id: {job_id}.")
-
-                runtime = job_details.runtime
-
-                if job_details.status == JobStatus.SUCCESS:
-                    md = f"{md} (success): runtime: {runtime} sec"
-                elif job_details.status == JobStatus.FAILED:
-                    step = self.pipeline.get_step(step_id)
-                    if step.required:
-                        md = f"{md} (failed:\n    - error: {job_details.error}"
-                        md = f"{md}\n    - runtime: {runtime} sec"
-                    else:
-                        md = f"{md} (failed): not required"
-
-                outputs = self.pipeline.get_step_outputs(step_id=step_id)
-                results[step_id] = outputs
-
-        if failed:
-            container.error(md)
-        else:
-            container.markdown(md)
-
-        return results
+        st.kiara.render_pipeline_stage_processing_result(
+            pipeline=self.pipeline,
+            result=result,
+            only_stage=only_stage,
+            container=container,
+        )
 
     def process_step(
         self,
@@ -404,25 +283,14 @@ class PipelinePage(abc.ABC):
 
         Other steps in the same stage will not be processed.
         """
-        job_id = self.pipeline_controller.process_step(
-            step_id=step_id, wait=wait_for_processing_to_finish, raise_exception=False
+
+        return st.kiara.process_pipeline_step(
+            pipeline=self.pipeline,
+            step_id=step_id,
+            wait_for_processing_to_finish=wait_for_processing_to_finish,
+            render_result=render_result,
+            container=container,
         )
-
-        job = self.pipeline_controller.get_job_details(job_id)
-        assert job is not None
-
-        if job.status == JobStatus.SUCCESS:
-            r = "Success"
-        elif job.status == JobStatus.FAILED:
-            r = f"Failed: {job.error}"
-
-        # process_result: typing.Mapping[str, typing.Union[None, str, Exception]] = r
-        process_result: str = r
-
-        if render_result and process_result:
-            self.render_step_processing_result(process_result, container=container)
-
-        return process_result
 
     @abc.abstractmethod
     def run_page(self, st: DeltaGenerator):

@@ -10,7 +10,7 @@ import kiara_streamlit
 kiara_streamlit.init()
 
 module = st.kiara.module_select(
-    allow_module_config=False, key="module_select_no_config"
+    allow_module_config=False, key="write_module_config_schema"
 )
 if module:
     st.write(f"Module configuration schema for: {module._module_type_id}")

@@ -61,7 +61,7 @@ class KiaraValueInfoComponentsMixin(KiaraComponentMixin):
                     notebook="@d3/force-directed-graph",
                     targets=["chart"],
                     redefine={
-                        "data": cleaned_data,
+                        "miserables": cleaned_data,
                     },
                     key=key,
                     observe=[],

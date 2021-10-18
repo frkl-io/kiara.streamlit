@@ -365,6 +365,7 @@ class KiaraInputComponentsMixin(KiaraComponentMixin):
         self,
         label: str,
         default: typing.Any = None,
+        add_no_value_option: bool = False,
         key: typing.Optional[str] = None,
         container: DeltaGenerator = st,
     ) -> typing.Optional[Value]:
@@ -373,6 +374,7 @@ class KiaraInputComponentsMixin(KiaraComponentMixin):
         alias = self.value_select_box(
             value_type="table",
             label=label,
+            add_no_value_option=add_no_value_option,
             default=default,
             key=key,
             container=container,
