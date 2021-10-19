@@ -1,6 +1,10 @@
 # -*- coding: utf-8 -*-
+import atexit
 import copy
+import os
+import shutil
 import typing
+import uuid
 from functools import partial
 
 import streamlit as st
@@ -8,7 +12,11 @@ from kiara import Kiara
 from kiara.config import KiaraConfig
 
 from kiara_streamlit.components.mgmt import AllComponentsMixin, ComponentMgmt
-from kiara_streamlit.defaults import EXAMPLE_BASE_DIR
+from kiara_streamlit.defaults import (
+    EXAMPLE_BASE_DIR,
+    ONBOARD_MAKER_KEY,
+    kiara_stremalit_app_dirs,
+)
 
 
 class KiaraStreamlit(object):
@@ -41,6 +49,15 @@ class KiaraStreamlit(object):
         _temp.update(self._avail_kiara_methods)
         self._avail_methods: typing.Set[str] = _temp
 
+        self._temp_dir = os.path.join(
+            kiara_stremalit_app_dirs.user_cache_dir, str(uuid.uuid4())
+        )
+
+        def del_temp_dir():
+            shutil.rmtree(self._temp_dir, ignore_errors=True)
+
+        atexit.register(del_temp_dir)
+
     def __getattr__(self, item):
 
         if item in self._avail_kiara_methods:
@@ -65,10 +82,18 @@ class KiaraStreamlit(object):
     def components(self) -> AllComponentsMixin:
 
         if "__kiara_components__" not in st.session_state.keys():
-            comps = AllComponentsMixin()
+            comps = AllComponentsMixin(temp_dir=self._temp_dir)
             comps._kiara = self.kiara
             st.session_state["__kiara_components__"] = comps
         return st.session_state.__kiara_components__
+
+    def wants_onboarding(self) -> bool:
+        onboarding = st.session_state.get(ONBOARD_MAKER_KEY, None)
+        if onboarding and onboarding["enabled"] is True:
+            return True
+        else:
+            st.session_state.pop(ONBOARD_MAKER_KEY, None)
+            return False
 
     def _get_component(self, component_name) -> typing.Callable:
 

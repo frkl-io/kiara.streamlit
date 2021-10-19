@@ -11,6 +11,7 @@ from kiara.defaults import SpecialValue
 from streamlit.delta_generator import DeltaGenerator
 
 from kiara_streamlit.components import KiaraComponentMixin
+from kiara_streamlit.defaults import ONBOARD_MAKER_KEY
 
 
 class KiaraInputComponentsMixin(KiaraComponentMixin):
@@ -29,9 +30,17 @@ class KiaraInputComponentsMixin(KiaraComponentMixin):
         label: typing.Optional[str] = None,
         default: typing.Optional[str] = None,
         add_no_value_option: bool = False,
+        onboard_options: typing.Optional[typing.Mapping[str, typing.Any]] = None,
         key: typing.Optional[str] = None,
         container: DeltaGenerator = st,
     ):
+
+        if onboard_options is None:
+            onboard_options = {}
+        add_onboard_option = onboard_options.get("enabled", False)
+
+        if add_onboard_option and not key:
+            raise Exception("When using the onboard option, 'key' must be specified.")
 
         if label is None:
             if value_type == "any":
@@ -51,24 +60,38 @@ class KiaraInputComponentsMixin(KiaraComponentMixin):
         sorted_aliases = sorted(aliases)
 
         no_selection_option = f"-- no {value_type} --"
+        onboard_select_option = f"-- onboard new {value_type} --"
+
         if add_no_value_option:
-            selection = [no_selection_option] + sorted(aliases)
+            pre_options = [no_selection_option]
+            if onboard_select_option:
+                pre_options.append(onboard_select_option)
+            selection = pre_options + sorted(aliases)
         else:
-            selection = sorted(aliases)
+            if onboard_select_option:
+                selection = [onboard_select_option] + sorted(aliases)
+            else:
+                selection = sorted(aliases)
 
-        index = 0
         if default and default in sorted_aliases:
-            index = selection.index(default)
+            raise NotImplementedError()
+            if key in st.session_state.keys():
+                del st.session_state[key]
+            st.session_state[key] = default
 
-        user_sel = container.selectbox(
-            label=label, options=selection, index=index, key=key
-        )
+        user_sel = container.selectbox(label=label, options=selection, key=key)
 
         # if key:
         #     st.session_state[key] = user_sel
 
         if user_sel == no_selection_option:
             user_sel = None
+        elif user_sel == onboard_select_option:
+            onboard_config = dict(onboard_options)
+            onboard_config["value_type"] = value_type
+            onboard_config["store_key"] = key
+            st.session_state[ONBOARD_MAKER_KEY] = onboard_config
+            st.experimental_rerun()
 
         return user_sel
 
@@ -209,7 +232,7 @@ class KiaraInputComponentsMixin(KiaraComponentMixin):
 
         result = func(
             label=label,
-            default=default,
+            # default=default,
             key=key,
             container=container,
         )
@@ -366,6 +389,7 @@ class KiaraInputComponentsMixin(KiaraComponentMixin):
         label: str,
         default: typing.Any = None,
         add_no_value_option: bool = False,
+        onboard_options: typing.Optional[typing.Mapping[str, typing.Any]] = None,
         key: typing.Optional[str] = None,
         container: DeltaGenerator = st,
     ) -> typing.Optional[Value]:
@@ -375,6 +399,7 @@ class KiaraInputComponentsMixin(KiaraComponentMixin):
             value_type="table",
             label=label,
             add_no_value_option=add_no_value_option,
+            onboard_options=onboard_options,
             default=default,
             key=key,
             container=container,

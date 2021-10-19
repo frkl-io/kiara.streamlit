@@ -1,10 +1,11 @@
 # -*- coding: utf-8 -*-
 import os
-import shutil
-import tempfile
 import typing
+import uuid
 
+import streamlit as st
 from kiara.data import Value, ValueSet
+from kiara.operations import Operation
 from streamlit.uploaded_file_manager import UploadedFile
 
 from kiara_streamlit.components import KiaraComponentMixin
@@ -32,52 +33,54 @@ class KiaraFileComponentsMixin(KiaraComponentMixin):
             if not isinstance(uf, UploadedFile):
                 raise TypeError(f"Can't onboard: invalid type '{type(uf)}'")
 
-        with tempfile.TemporaryDirectory() as tmpdirname:
-            for uf in uploaded_files:
-                path = os.path.join(tmpdirname, uf.name)
-                with open(path, "wb") as f:
-                    f.write(uf.getbuffer())
+        temp_dir = os.path.join(self.temp_dir, str(uuid.uuid4()))
+        os.makedirs(temp_dir)
+        for uf in uploaded_files:
+            path = os.path.join(temp_dir, uf.name)
+            with open(path, "wb") as f:
+                f.write(uf.getbuffer())
 
-            inputs = {
-                "source": tmpdirname,
-                "save": True,
-                "aliases": aliases,
-            }
-            result: ValueSet = self._kiara.run(  # type: ignore
-                "file_bundle.import_from.local.folder_path", inputs=inputs
-            )
-            imported_bundle = result.get_value_obj("value_item")
-
-        shutil.rmtree(tmpdirname, ignore_errors=True)
+        inputs = {
+            "source": temp_dir,
+            "save": True,
+            "aliases": aliases,
+        }
+        result: ValueSet = self._kiara.run(  # type: ignore
+            "file_bundle.import_from.local.folder_path", inputs=inputs
+        )
+        imported_bundle = result.get_value_obj("value_item")
 
         return imported_bundle
 
-    def import_file(
+    def import_uploaded_file(
         self,
         uploaded_file: UploadedFile,
-        # aliases: typing.Optional[typing.Iterable[str]] = None,
-    ) -> str:
-
-        # if aliases is None:
-        #     aliases = []
-        # if isinstance(aliases, str):
-        #     aliases = [aliases]
+        store: typing.Union[bool, str, typing.Iterable[str]] = False,
+    ) -> Value:
 
         if not isinstance(uploaded_file, UploadedFile):
             raise TypeError(f"Can't onboard: invalid type '{type(uploaded_file)}'")
 
-        temp_dir = tempfile.TemporaryDirectory()
-        path = os.path.join(temp_dir.name, uploaded_file.name)
+        temp_dir = os.path.join(self.temp_dir, str(uuid.uuid4()))
+        os.makedirs(temp_dir)
+        path = os.path.join(temp_dir, uploaded_file.name)
         with open(path, "wb") as f:
-            print(f"Writing {path}")
             f.write(uploaded_file.getbuffer())
 
-            # inputs = {
-            #     "source": path,
-            #     "save": False,
-            #     "aliases": [],
-            # }
-            # result = self._kiara.run("file.import_from.local.file_path", inputs=inputs)
-            # imported_file = result.get_value_obj("value_item")
+        op: Operation = st.kiara.get_operation("file.import_from.local.file_path")
+        import_result = op.run(source=path)
+        file_obj = import_result.get_value_obj("value_item")
 
-        return path
+        if store is False:
+            return file_obj
+        elif store is True:
+            stored = file_obj.save()
+            return stored
+        elif isinstance(store, str):
+            stored = file_obj.save(aliases=[store])
+            return stored
+        elif isinstance(store, typing.Iterable):
+            stored = file_obj.save(aliases=store)
+            return stored
+        else:
+            raise NotImplementedError()

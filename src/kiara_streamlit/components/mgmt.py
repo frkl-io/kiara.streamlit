@@ -16,7 +16,9 @@ from pydantic.main import BaseModel
 from streamlit.delta_generator import DeltaGenerator
 
 from kiara_streamlit.components import KiaraComponentMixin
+from kiara_streamlit.components.file import KiaraFileComponentsMixin
 from kiara_streamlit.components.module import KiaraModuleComponentsMixin
+from kiara_streamlit.components.onboarding import KiaraOnboardingComponentsMixin
 from kiara_streamlit.components.operations import KiaraOperationComponentsMixin
 from kiara_streamlit.components.pipeline import KiaraPipelineComponentsMixin
 from kiara_streamlit.components.processing import KiaraProcessingComponentsMixin
@@ -217,8 +219,9 @@ class ExampleCode(object):
 
 
 class AllComponentsMixin(
-    # KiaraFileComponentsMixin,
+    KiaraFileComponentsMixin,
     KiaraOperationComponentsMixin,
+    KiaraOnboardingComponentsMixin,
     KiaraProcessingComponentsMixin,
     KiaraPipelineComponentsMixin,
     KiaraModuleComponentsMixin,
@@ -293,6 +296,7 @@ class ComponentMgmt(object):
 
         self._components_by_collection = funcs
         self._components_index = index
+
         return self._components_by_collection
 
     @property

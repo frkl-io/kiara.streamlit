@@ -147,6 +147,13 @@ class PipelineApp(object):
 
     def run(self):
 
+        if st.kiara.wants_onboarding():
+            print("ONBOARDING")
+            if st.kiara.onboard_page():
+                st.experimental_rerun()
+            else:
+                return
+
         if not self._pages:
             st.write("No pages")
             return

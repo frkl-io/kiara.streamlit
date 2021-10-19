@@ -25,9 +25,14 @@ class KiaraComponentMixin(object):
         cls = type(name, tuple(mixins), {})
         return cls
 
-    def __init__(self, **kwargs):
+    def __init__(self, temp_dir: str, **kwargs):
 
+        self._temp_dir: str = temp_dir
         self._kiara: typing.Optional[Kiara] = None
+
+    @property
+    def temp_dir(self):
+        return self._temp_dir
 
     @property
     def kiara(self) -> Kiara:
