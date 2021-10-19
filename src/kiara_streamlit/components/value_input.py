@@ -88,6 +88,7 @@ class KiaraInputComponentsMixin(KiaraComponentMixin):
             user_sel = None
         elif user_sel == onboard_select_option:
             onboard_config = dict(onboard_options)
+            onboard_config["enabled"] = True
             onboard_config["value_type"] = value_type
             onboard_config["store_key"] = key
             st.session_state[ONBOARD_MAKER_KEY] = onboard_config

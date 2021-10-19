@@ -96,7 +96,10 @@ class KiaraOnboardingComponentsMixin(KiaraComponentMixin):
         )
 
         if store_table is True:
-            alias = container.text_input("Alias")
+            default_alias = ""
+            if uploaded_file:
+                default_alias = uploaded_file.name.split(".")[0]
+            alias = container.text_input("Alias", value=default_alias)
             if alias:
                 aliases = [alias]
             else:
@@ -185,7 +188,7 @@ class KiaraOnboardingComponentsMixin(KiaraComponentMixin):
         else:
             raise NotImplementedError()
 
-        assert isinstance(table, str)
+        assert table is None or isinstance(table, str)
 
         return table
 

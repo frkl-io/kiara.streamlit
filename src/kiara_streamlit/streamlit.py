@@ -89,7 +89,7 @@ class KiaraStreamlit(object):
 
     def wants_onboarding(self) -> bool:
         onboarding = st.session_state.get(ONBOARD_MAKER_KEY, None)
-        if onboarding and onboarding["enabled"] is True:
+        if onboarding and onboarding.get("enabled", False) is True:
             return True
         else:
             st.session_state.pop(ONBOARD_MAKER_KEY, None)
