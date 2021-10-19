@@ -89,7 +89,7 @@ class KiaraOnboardingComponentsMixin(KiaraComponentMixin):
         file_type: typing.Optional[typing.Union[str, typing.List[str]]] = None,
         key: typing.Optional[str] = None,
         container: DeltaGenerator = st,
-    ) -> typing.Optional[str]:
+    ) -> typing.Union[None, str, Value]:
 
         uploaded_file = st.file_uploader(
             "Select file", type=file_type, accept_multiple_files=False, key=key
@@ -184,6 +184,8 @@ class KiaraOnboardingComponentsMixin(KiaraComponentMixin):
             )
         else:
             raise NotImplementedError()
+
+        assert isinstance(table, str)
 
         return table
 
