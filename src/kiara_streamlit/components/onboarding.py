@@ -19,7 +19,7 @@ class KiaraOnboardingComponentsMixin(KiaraComponentMixin):
         store_table: typing.Union[bool, str, typing.Iterable[str]] = False,
         key: typing.Optional[str] = None,
         container: DeltaGenerator = st,
-    ) -> typing.Optional[str]:
+    ) -> typing.Union[None, str, Value]:
 
         folder_path = container.text_input("Specify path to folder", key=key)
 
