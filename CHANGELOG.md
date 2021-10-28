@@ -2,7 +2,9 @@
 Changelog
 =========
 
-## Version 0.1.10 (Upcoming)
+## Version 0.1.11 (Upcoming)
+
+## Version 0.1.10
 
 - add initial support for data-centric workflows
 
