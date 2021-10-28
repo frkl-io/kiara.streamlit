@@ -100,7 +100,11 @@ class OperationPage(abc.ABC):
     def run_page(self, is_last_page: bool) -> typing.Optional[ValueSet]:
 
         if is_last_page:
-            result: ValueSet = self._run_page(self.input_value)
+            if self.input_value is None:
+                raise Exception(
+                    f"Can't run page '{self.page_id}': input not set (yet)."
+                )
+            result: typing.Optional[ValueSet] = self._run_page(self.input_value)
             if result is not None and result.items_are_valid():
                 self.result_values = result
         else:
@@ -295,7 +299,7 @@ class DataCentricApp(object):
             if preview_operation:
                 right.write("**TODO: module details**")
                 right.write(f"Operation: {next_step.id}")
-                right.write(f"Module: {next_step.module._module_type_id}")
+                right.write(f"Module: {next_step.module._module_type_id}")  # type: ignore
 
         select = left.button("Add operation")
         if select:

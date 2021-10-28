@@ -74,7 +74,7 @@ class KiaraOperationComponentsMixin(KiaraComponentMixin):
         ignore_patterns: typing.Optional[typing.Iterable[str]] = None,
         key: typing.Optional[str] = None,
         container: DeltaGenerator = st,
-    ) -> Operation:
+    ) -> typing.Optional[Operation]:
 
         tags = {}
         if value is None or not value.item_is_valid():
