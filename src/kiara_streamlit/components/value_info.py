@@ -16,6 +16,7 @@ class KiaraValueInfoComponentsMixin(KiaraComponentMixin):
     def write_value(
         self,
         value: Value,
+        write_config: typing.Optional[typing.Mapping[str, typing.Any]] = None,
         key: typing.Optional[str] = None,
         container: DeltaGenerator = st,
     ):
@@ -25,6 +26,12 @@ class KiaraValueInfoComponentsMixin(KiaraComponentMixin):
         Currently supported types: 'array', 'table', 'network_graph', 'dict'. All other types will be written using the
         generic `st.write(...)` method.
         """
+
+        if write_config is None:
+            write_config = {}
+
+        preview = write_config.get("preview", False)
+
         if (
             value is None
             or not value.item_is_valid()
@@ -36,8 +43,13 @@ class KiaraValueInfoComponentsMixin(KiaraComponentMixin):
             data = value.get_value_data()
             if value.type_name == "table":
                 data = data.to_pandas()
+                if preview:
+                    data = data.head(50)
             elif value.type_name == "array":
                 data = data.to_pandas()
+                if preview:
+                    data = data.head(50)
+
             elif value.type_name == "network_graph":
 
                 graph: Graph = value.get_value_data()

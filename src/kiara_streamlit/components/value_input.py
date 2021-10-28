@@ -24,6 +24,68 @@ class KiaraInputComponentsMixin(KiaraComponentMixin):
     useful in certain situations.
     """
 
+    def value_select_panel(
+        self,
+        supported_value_types: typing.Optional[typing.Iterable[str]] = None,
+        allow_preview: bool = True,
+        preselect_preview: bool = True,
+        key: typing.Optional[str] = None,
+        container: DeltaGenerator = st,
+    ) -> typing.Optional[Value]:
+
+        if allow_preview:
+            left, center, right = container.columns([2, 8, 3])
+        else:
+            left = container
+            center = None
+            right = None
+
+        if supported_value_types is None:
+            supported_value_types = ["any"]
+
+        if supported_value_types != ["any"]:
+            raise NotImplementedError()
+
+        supported_value_type = "any"
+
+        selected_alias = st.kiara.value_select_box(
+            label="Select your dataset",
+            value_type=supported_value_type,
+            add_no_value_option=True,
+            container=left,
+        )
+
+        if not selected_alias:
+            value: typing.Optional[Value] = None
+        else:
+            value = st.kiara.get_value(selected_alias)
+
+        if allow_preview:
+            value_preview = left.checkbox(
+                "Preview value",
+                value=preselect_preview,
+                key=f"{key}_preview_value_checkbox",
+            )
+            center.write("---")
+            right.write("---")
+            display_md = left.checkbox(
+                "Display metadata", value=False, key=f"{key}_display_metadata_checkbox"
+            )
+            if display_md:
+                if value is not None:
+                    right.write(value.get_metadata())
+                else:
+                    right.write("No value selected.")
+            if value_preview:
+                if value is not None:
+                    st.kiara.write_value(
+                        value, write_config={"preview": True}, container=center
+                    )
+                else:
+                    center.write("No value selected.")
+
+        return value
+
     def value_select_box(
         self,
         value_type: str,
@@ -59,16 +121,21 @@ class KiaraInputComponentsMixin(KiaraComponentMixin):
 
         sorted_aliases = sorted(aliases)
 
-        no_selection_option = f"-- no {value_type} --"
-        onboard_select_option = f"-- onboard new {value_type} --"
+        if value_type == "any":
+            _vt = "dataset"
+        else:
+            _vt = value_type
+
+        no_selection_option = f"-- no {_vt} --"
+        onboard_select_option = f"-- onboard new {_vt} --"
 
         if add_no_value_option:
             pre_options = [no_selection_option]
-            if onboard_select_option:
+            if add_onboard_option:
                 pre_options.append(onboard_select_option)
             selection = pre_options + sorted(aliases)
         else:
-            if onboard_select_option:
+            if add_onboard_option:
                 selection = [onboard_select_option] + sorted(aliases)
             else:
                 selection = sorted(aliases)
@@ -102,6 +169,7 @@ class KiaraInputComponentsMixin(KiaraComponentMixin):
             ValueSet, typing.Mapping[str, typing.Union[str, Value, ValueSchema]]
         ],
         defaults: typing.Optional[typing.Mapping[str, typing.Any]] = None,
+        constants: typing.Optional[typing.Mapping[str, Value]] = None,
         expand_optional: bool = True,
         key: typing.Optional[str] = None,
         container: DeltaGenerator = st,
@@ -118,13 +186,25 @@ class KiaraInputComponentsMixin(KiaraComponentMixin):
         if defaults is None:
             defaults = {}
 
+        if constants is None:
+            constants = {}
+
         input_schemas = {}
+
+        result: typing.Dict[str, typing.Optional[Value]] = {}
         if isinstance(valueset_schema, ValueSet):
             for field_name, value in valueset_schema.items():
-                input_schemas[field_name] = value.value_schema
+                if field_name in constants.keys():
+                    result[field_name] = constants[field_name]
+                else:
+                    input_schemas[field_name] = value.value_schema
+
         elif isinstance(valueset_schema, typing.Mapping):
 
             for field_name, val in valueset_schema.items():
+                if field_name in constants.keys():
+                    result[field_name] = constants[field_name]
+                    continue
                 if isinstance(val, str):
                     input_schemas[field_name] = ValueSchema(type=val)
                 elif isinstance(val, Value):
@@ -151,7 +231,6 @@ class KiaraInputComponentsMixin(KiaraComponentMixin):
             inputs_main = inputs_other
             inputs_other = {}
 
-        result: typing.Dict[str, typing.Optional[Value]] = {}
         if inputs_main:
             columns_main = container.columns(len(inputs_main))
             for idx, (field_name, value_schema) in enumerate(inputs_main.items()):
@@ -482,7 +561,7 @@ class KiaraInputComponentsMixin(KiaraComponentMixin):
     def value_input_dict(
         self,
         label: str,
-        default: typing.Any,
+        default: typing.Any = None,
         key: typing.Optional[str] = None,
         container: DeltaGenerator = str,
     ) -> typing.Optional[typing.Mapping]:
@@ -509,7 +588,7 @@ class KiaraInputComponentsMixin(KiaraComponentMixin):
     def value_input_list(
         self,
         label: str,
-        default: typing.Any,
+        default: typing.Any = None,
         key: typing.Optional[str] = None,
         container: DeltaGenerator = str,
     ) -> typing.Optional[typing.List]:
