@@ -126,6 +126,17 @@ class FirstOperationPage(OperationPage):
     def doc(self) -> DocumentationMetadataModel:
         return DocumentationMetadataModel.from_string("Select existing dataset.")
 
+    def run_page(self, is_last_page: bool) -> typing.Optional[ValueSet]:
+
+        if is_last_page:
+            result: typing.Optional[ValueSet] = self._run_page(None)  # type: ignore
+            if result is not None and result.items_are_valid():
+                self.result_values = result
+        else:
+            st.write(f"SKIPPING STEP: {self.module_type_id}")
+
+        return self.result_values
+
     def _run_page(self, value: Value) -> typing.Optional[ValueSet]:
 
         assert value is None
