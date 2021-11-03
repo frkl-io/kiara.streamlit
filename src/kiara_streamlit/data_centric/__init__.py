@@ -243,6 +243,7 @@ class DataCentricApp(object):
             else:
                 operation_page = DefaultOperationPage(operation=operation_page)
 
+        assert isinstance(operation_page, OperationPage)
         self._pages[len(self._pages)] = operation_page
 
     def remove_page(self, amount: int = 1):
