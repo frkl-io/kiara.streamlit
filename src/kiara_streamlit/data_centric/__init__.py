@@ -13,14 +13,18 @@ from kiara.operations import Operation
 
 
 class OperationPage(abc.ABC):
-    def __init__(self, operation: Operation):
+    def __init__(self, operation: typing.Union[Operation, str]):
 
         self._id = str(uuid.uuid4())
-        self._operation: Operation = operation
+
+        if isinstance(operation, str):
+            operation = st.kiara.get_operation(operation)
+        self._operation: Operation = operation  # type: ignore
 
         self._input_value: typing.Optional[Value] = None
         self._result_values: typing.Optional[ValueSet] = None
         self._selected_field: typing.Optional[str] = None
+        self._cache: typing.Dict[str, typing.Any] = {}
 
     @property
     def operation(self) -> Operation:
@@ -190,12 +194,13 @@ class DataCentricApp(object):
     @classmethod
     def create(
         cls,
+        operation_pages: typing.Optional[typing.Mapping[str, OperationPage]] = None,
         config: typing.Optional[typing.Mapping[str, typing.Any]] = None,
     ) -> "DataCentricApp":
 
         if "__data_centric_app__" not in st.session_state:
 
-            app = DataCentricApp(config=config)  # type: ignore
+            app = DataCentricApp(operation_pages=operation_pages, config=config)  # type: ignore
             st.session_state["__data_centric_app__"] = app
 
         else:
@@ -203,9 +208,19 @@ class DataCentricApp(object):
 
         return app
 
-    def __init__(self, config: typing.Optional[typing.Mapping[str, typing.Any]] = None):
+    def __init__(
+        self,
+        operation_pages: typing.Optional[typing.Mapping[str, OperationPage]] = None,
+        config: typing.Optional[typing.Mapping[str, typing.Any]] = None,
+    ):
 
         print("CREATING APP")
+
+        if operation_pages is None:
+            operation_pages = {}
+        self._available_prepared_pages: typing.Mapping[
+            str, OperationPage
+        ] = operation_pages
 
         if config is None:
             config = {}
@@ -215,7 +230,18 @@ class DataCentricApp(object):
 
         self.add_page(FirstOperationPage(operation=None))  # type: ignore
 
-    def add_page(self, operation_page: OperationPage):
+    def add_page(self, operation_page: typing.Union[str, Operation, OperationPage]):
+
+        if isinstance(operation_page, str):
+            if operation_page in self._available_prepared_pages.keys():
+                operation_page = self._available_prepared_pages[operation_page]
+            else:
+                operation_page = st.kiara.get_operation(operation_page)
+        if isinstance(operation_page, Operation):
+            if operation_page.id in self._available_prepared_pages.keys():
+                operation_page = self._available_prepared_pages[operation_page.id]
+            else:
+                operation_page = DefaultOperationPage(operation=operation_page)
 
         self._pages[len(self._pages)] = operation_page
 
@@ -401,5 +427,5 @@ class DataCentricApp(object):
         next_operation = self.ask_for_next_operation(value=selected_value)
         if next_operation:
             print(f"ADDING: {next_operation}")
-            self.add_page(DefaultOperationPage(operation=next_operation))
+            self.add_page(next_operation)
             st.experimental_rerun()
