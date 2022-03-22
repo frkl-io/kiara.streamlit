@@ -351,6 +351,13 @@ class DataCentricApp(object):
 
     def run(self):
 
+        if st.kiara.wants_onboarding():
+            print("ONBOARDING")
+            if st.kiara.onboard_page():
+                st.experimental_rerun()
+            else:
+                return
+
         display_details = self.render_navigation()
 
         # last_values = None

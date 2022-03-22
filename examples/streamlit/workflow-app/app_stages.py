@@ -33,7 +33,7 @@ def icon(icon_name):
 # local_css("style.css")
 # remote_css('https://fonts.googleapis.com/icon?family=Material+Icons')
 
-# pages = [
+# modules = [
 #     StagePage(id="Onboarding", config={"stage": 1}),
 #     StagePage(id="Column-mapping", config={"stage": 2}),
 #     StagePage(id="Augment graph", config={"stage": 3}),

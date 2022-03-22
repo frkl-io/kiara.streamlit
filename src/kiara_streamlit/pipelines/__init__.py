@@ -155,7 +155,7 @@ class PipelineApp(object):
                 return
 
         if not self._pages:
-            st.write("No pages")
+            st.write("No modules")
             return
 
         page_params = st.experimental_get_query_params()

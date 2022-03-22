@@ -152,6 +152,7 @@ class TableComponentsMixin(KiaraComponentMixin):
                 )
             except Exception as e:
                 container.error(str(e))
+                # container.write(e)
 
         container.subheader("Query result")
 
